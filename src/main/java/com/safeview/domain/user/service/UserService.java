@@ -52,6 +52,7 @@ public class UserService {
         // JWT 생성
         String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
 
-        return new LoginResponse(token);
+        // 사용자 정보 함께 응답
+        return new LoginResponse(token, user.getEmail(), user.getNickname());
     }
 }
