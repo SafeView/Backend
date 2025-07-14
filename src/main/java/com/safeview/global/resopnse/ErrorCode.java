@@ -1,4 +1,4 @@
-package com.safeview.global;
+package com.safeview.global.resopnse;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,10 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "500", "서버 에러, 관리자에게 문의 바랍니다."),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "400", "잘못된 요청입니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "401", "인증이 필요합니다."),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "403", "금지된 요청입니다.");
+    FORBIDDEN(HttpStatus.FORBIDDEN, "403", "금지된 요청입니다."),
+    EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER4091", "이미 존재하는 이메일입니다."),
+    PHONE_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER4092", "이미 존재하는 전화번호입니다."),
+    NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER4093", "이미 사용 중인 닉네임입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
