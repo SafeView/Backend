@@ -1,9 +1,12 @@
 package com.safeview.domain.user.service;
 
+import com.safeview.domain.user.dto.LoginRequest;
+import com.safeview.domain.user.dto.LoginResponse;
 import com.safeview.domain.user.dto.SignUpRequest;
 import com.safeview.domain.user.dto.SignUpResponse;
 import com.safeview.domain.user.entity.User;
 import com.safeview.domain.user.repository.UserRepository;
+import com.safeview.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -33,5 +37,21 @@ public class UserService {
         User saved = userRepository.save(newUser);
 
         return new SignUpResponse(saved.getId(), saved.getEmail());
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        // 이메일로 유저 조회
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
+
+        // 비밀번호 일치 확인
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+
+        // JWT 생성
+        String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
+
+        return new LoginResponse(token);
     }
 }

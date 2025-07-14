@@ -1,5 +1,7 @@
 package com.safeview.domain.user.controller;
 
+import com.safeview.domain.user.dto.LoginRequest;
+import com.safeview.domain.user.dto.LoginResponse;
 import com.safeview.domain.user.dto.SignUpRequest;
 import com.safeview.domain.user.dto.SignUpResponse;
 import com.safeview.domain.user.service.UserService;
@@ -19,4 +21,12 @@ public class AuthController {
         SignUpResponse response = userService.register(request);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        LoginResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+
 }
