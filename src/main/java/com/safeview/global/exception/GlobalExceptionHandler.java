@@ -1,5 +1,7 @@
-package com.safeview.global;
+package com.safeview.global.exception;
 
+import com.safeview.global.ApiResponse;
+import com.safeview.global.ErrorCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
