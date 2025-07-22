@@ -1,5 +1,6 @@
 package com.safeview.global.security;
 
+import com.safeview.domain.user.entity.Role;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -38,7 +39,7 @@ public class JwtTokenProvider {
      * @param role 사용자 역할 (예: ROLE_USER)
      * @return 생성된 JWT 문자열
      */
-    public String generateToken(Long userId, String role) {
+    public String generateToken(Long userId, Role role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTime);
 
