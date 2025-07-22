@@ -38,8 +38,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 비밀번호 암호화
-        String encodedPassword = requestDto.getPassword(); // 실제로는 암호화 필요
-        // String encodedPassword = passwordEncoder.encode(requestDto.getPassword()); // Spring Security 추가 후 이 코드를 사용
+        String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
 
         User user = requestDto.toEntity(encodedPassword);
         User savedUser = userRepository.save(user);
