@@ -127,15 +127,15 @@ public class DecryptionServiceImpl implements DecryptionService {
 
     @Override
     @Transactional
-    public KeyVerificationResponseDto verifyKeyByTokenAndCamera(KeyVerificationRequestDto requestDto) {
-        log.info("토큰+카메라 ID 키 검증 요청: accessToken={}, cameraId={}", 
-                requestDto.getAccessToken(), requestDto.getCameraId());
+    public KeyVerificationResponseDto verifyKeyByUserIdAndToken(KeyVerificationRequestDto requestDto, Long userId) {
+        log.info("사용자 ID+접근 토큰+카메라 ID 키 검증 요청: userId={}, accessToken={}, cameraId={}", 
+                userId, requestDto.getAccessToken(), requestDto.getCameraId());
         
         // 1. 접근 토큰으로 키 조회
         DecryptionKey decryptionKey = findKeyByAccessToken(requestDto.getAccessToken());
         
-        // 2. 키 기본 유효성 검증 (사용자 ID 검증 제외)
-        ValidationResult validationResult = validateKeyByTokenAndCamera(decryptionKey, requestDto);
+        // 2. 키 기본 유효성 검증 (사용자 ID 포함)
+        ValidationResult validationResult = validateKeyByUserIdAndToken(decryptionKey, requestDto, userId);
         
         if (!validationResult.isValid()) {
             log.warn("키 검증 실패: {}", validationResult.getMessage());
@@ -151,8 +151,8 @@ public class DecryptionServiceImpl implements DecryptionService {
         // 5. 복호화 토큰 생성
         String decryptionToken = generateDecryptionToken();
         
-        log.info("키 검증 성공: keyId={}, cameraId={}, remainingUses={}", 
-                decryptionKey.getId(), requestDto.getCameraId(), decryptionKey.getRemainingUses());
+        log.info("키 검증 성공: keyId={}, userId={}, cameraId={}, remainingUses={}", 
+                decryptionKey.getId(), userId, requestDto.getCameraId(), decryptionKey.getRemainingUses());
         
         return decryptionKeyMapper.toKeyVerificationResponse(
                 decryptionKey, true, "키 검증 성공", decryptionToken, 
@@ -263,21 +263,25 @@ public class DecryptionServiceImpl implements DecryptionService {
     }
 
     /**
-     * 토큰과 카메라 ID 기반 키 검증 (사용자 ID 검증 제외)
+     * 사용자 ID와 접근 토큰 기반 키 검증
      */
-    public ValidationResult validateKeyByTokenAndCamera(DecryptionKey decryptionKey, KeyVerificationRequestDto requestDto) {
+    public ValidationResult validateKeyByUserIdAndToken(DecryptionKey decryptionKey, KeyVerificationRequestDto requestDto, Long userId) {
         // 1. 접근 토큰 검증
         if (!verifyAccessToken(decryptionKey, requestDto.getAccessToken())) {
             return DecryptionService.ValidationResult.failure("유효하지 않은 접근 토큰입니다.");
         }
         
-        // 2. 카메라 ID 검증 (선택적 - 향후 카메라별 권한 관리 가능)
+        // 2. 키 소유자 확인
+        if (!isKeyOwner(decryptionKey, userId)) {
+            return DecryptionService.ValidationResult.failure("키 소유자가 아닙니다.");
+        }
+        
+        // 3. 카메라 ID 검증 (선택적 - 향후 카메라별 권한 관리 가능)
         if (requestDto.getCameraId() != null && !requestDto.getCameraId().isEmpty()) {
-            // 카메라 ID 검증 로직 (현재는 기본 검증만)
             log.info("카메라 ID 검증: cameraId={}", requestDto.getCameraId());
         }
         
-        // 3. 키 상태 확인 (활성 + 만료 + 사용횟수)
+        // 4. 키 상태 확인 (활성 + 만료 + 사용횟수)
         if (!isKeyValid(decryptionKey)) {
             return DecryptionService.ValidationResult.failure("키가 유효하지 않습니다.");
         }

@@ -65,16 +65,17 @@ public class DecryptionController {
     }
 
     /**
-     * 복호화키 검증 (CCTV 모자이크 해제용) - 토큰과 카메라 ID로 검증
+     * 복호화키 검증 (CCTV 모자이크 해제용) - 사용자 ID + 접근 토큰 + 카메라 ID로 검증
      */
     @PostMapping("/keys/verify")
     public ResponseEntity<ApiResponse<KeyVerificationResponseDto>> verifyKey(
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody KeyVerificationRequestDto requestDto) {
         
-        log.info("키 검증 요청: accessToken={}, cameraId={}", 
-                requestDto.getAccessToken(), requestDto.getCameraId());
+        log.info("키 검증 요청: userId={}, accessToken={}, cameraId={}", 
+                userId, requestDto.getAccessToken(), requestDto.getCameraId());
         
-        KeyVerificationResponseDto response = decryptionService.verifyKeyByTokenAndCamera(requestDto);
+        KeyVerificationResponseDto response = decryptionService.verifyKeyByUserIdAndToken(requestDto, userId);
         
         return ResponseEntity.ok()
                 .body(ApiResponse.onSuccessWithMessage(response, "키 검증이 완료되었습니다."));

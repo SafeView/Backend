@@ -54,5 +54,5 @@ blockchain:
   # Sepolia 테스트넷 설정
   testnet: true
   # 실제 컨트랙트 배포 전까지 시뮬레이션 모드
-  simulation-mode: false
+  simulation-mode: true
 

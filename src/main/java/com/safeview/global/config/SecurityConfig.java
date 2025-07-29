@@ -34,8 +34,9 @@ public class SecurityConfig {
                         // ✅ 인증 없이 허용할 API 경로
                         .requestMatchers("/api/auth/**").permitAll() // ex: /api/auth/login, signup 등
                         .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/api/decryption/**").permitAll() // 테스트용 임시 허용
-                        .requestMatchers("/metamask-test.html").permitAll() // 테스트 페이지 허용
+                        
+                        // ✅ decryption API는 인증 필수
+                        .requestMatchers("/api/decryption/**").authenticated()
 
                         // ✅ 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()

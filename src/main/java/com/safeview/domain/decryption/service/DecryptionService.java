@@ -32,9 +32,9 @@ public interface DecryptionService {
     KeyVerificationResponseDto verifyKey(KeyVerificationRequestDto requestDto, Long userId);
     
     /**
-     * 키 검증 (토큰과 카메라 ID로 검증)
+     * 키 검증 (사용자 ID + 접근 토큰 + 카메라 ID로 검증)
      */
-    KeyVerificationResponseDto verifyKeyByTokenAndCamera(KeyVerificationRequestDto requestDto);
+    KeyVerificationResponseDto verifyKeyByUserIdAndToken(KeyVerificationRequestDto requestDto, Long userId);
 
     /**
      * 키 취소
