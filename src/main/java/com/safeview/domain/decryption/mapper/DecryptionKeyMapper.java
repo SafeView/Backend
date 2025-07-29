@@ -137,7 +137,7 @@ public class DecryptionKeyMapper {
      * 복호화에 필요한 모든 정보를 포함하여 빌드
      */
     public KeyVerificationResponseDto toKeyVerificationResponse(DecryptionKey decryptionKey, boolean isValid, String message, 
-                                                               String decryptionToken, String cameraId, String location, 
+                                                               String decryptionToken, String cameraId, 
                                                                boolean blockchainVerified) {
         return KeyVerificationResponseDto.builder()
                 // ✅ 검증 결과 (필수)
@@ -155,7 +155,6 @@ public class DecryptionKeyMapper {
                 
                 // 📹 CCTV 정보
                 .cameraId(cameraId)
-                .location(location)
                 
                 // 🔗 블록체인 정보
                 .blockchainTxHash(decryptionKey.getBlockchainTxHash())

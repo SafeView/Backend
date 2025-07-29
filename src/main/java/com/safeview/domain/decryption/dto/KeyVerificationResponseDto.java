@@ -24,7 +24,6 @@ public class KeyVerificationResponseDto {
     
     // 📹 CCTV 정보
     private String cameraId;               // CCTV 카메라 ID
-    private String location;               // 위치 정보
     
     // 🔗 블록체인 정보
     private String blockchainTxHash;       // 블록체인 트랜잭션 해시

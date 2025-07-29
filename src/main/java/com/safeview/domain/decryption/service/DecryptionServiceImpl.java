@@ -122,7 +122,41 @@ public class DecryptionServiceImpl implements DecryptionService {
         
         return decryptionKeyMapper.toKeyVerificationResponse(
                 decryptionKey, true, "키 검증 성공", decryptionToken, 
-                requestDto.getCameraId(), requestDto.getLocation(), blockchainValid);
+                requestDto.getCameraId(), blockchainValid);
+    }
+
+    @Override
+    @Transactional
+    public KeyVerificationResponseDto verifyKeyByTokenAndCamera(KeyVerificationRequestDto requestDto) {
+        log.info("토큰+카메라 ID 키 검증 요청: accessToken={}, cameraId={}", 
+                requestDto.getAccessToken(), requestDto.getCameraId());
+        
+        // 1. 접근 토큰으로 키 조회
+        DecryptionKey decryptionKey = findKeyByAccessToken(requestDto.getAccessToken());
+        
+        // 2. 키 기본 유효성 검증 (사용자 ID 검증 제외)
+        ValidationResult validationResult = validateKeyByTokenAndCamera(decryptionKey, requestDto);
+        
+        if (!validationResult.isValid()) {
+            log.warn("키 검증 실패: {}", validationResult.getMessage());
+            return decryptionKeyMapper.createFailedVerificationResponse(validationResult.getMessage());
+        }
+        
+        // 3. 블록체인 유효성 확인
+        boolean blockchainValid = isKeyValidOnBlockchain(decryptionKey);
+        
+        // 4. 키 사용 처리 (사용 횟수 감소)
+        updateKeyUsage(decryptionKey);
+        
+        // 5. 복호화 토큰 생성
+        String decryptionToken = generateDecryptionToken();
+        
+        log.info("키 검증 성공: keyId={}, cameraId={}, remainingUses={}", 
+                decryptionKey.getId(), requestDto.getCameraId(), decryptionKey.getRemainingUses());
+        
+        return decryptionKeyMapper.toKeyVerificationResponse(
+                decryptionKey, true, "키 검증 성공", decryptionToken, 
+                requestDto.getCameraId(), blockchainValid);
     }
 
     @Override
@@ -218,6 +252,29 @@ public class DecryptionServiceImpl implements DecryptionService {
         // 2. 키 소유자 확인
         if (!isKeyOwner(decryptionKey, userId)) {
             return DecryptionService.ValidationResult.failure("키 소유자가 아닙니다.");
+        }
+        
+        // 3. 키 상태 확인 (활성 + 만료 + 사용횟수)
+        if (!isKeyValid(decryptionKey)) {
+            return DecryptionService.ValidationResult.failure("키가 유효하지 않습니다.");
+        }
+
+        return DecryptionService.ValidationResult.success();
+    }
+
+    /**
+     * 토큰과 카메라 ID 기반 키 검증 (사용자 ID 검증 제외)
+     */
+    public ValidationResult validateKeyByTokenAndCamera(DecryptionKey decryptionKey, KeyVerificationRequestDto requestDto) {
+        // 1. 접근 토큰 검증
+        if (!verifyAccessToken(decryptionKey, requestDto.getAccessToken())) {
+            return DecryptionService.ValidationResult.failure("유효하지 않은 접근 토큰입니다.");
+        }
+        
+        // 2. 카메라 ID 검증 (선택적 - 향후 카메라별 권한 관리 가능)
+        if (requestDto.getCameraId() != null && !requestDto.getCameraId().isEmpty()) {
+            // 카메라 ID 검증 로직 (현재는 기본 검증만)
+            log.info("카메라 ID 검증: cameraId={}", requestDto.getCameraId());
         }
         
         // 3. 키 상태 확인 (활성 + 만료 + 사용횟수)
@@ -326,7 +383,13 @@ public class DecryptionServiceImpl implements DecryptionService {
         }
         
         log.info("블록체인에 키 등록: keyHash={}, userId={}", keyHash, userId);
-        String blockchainTxHash = blockchainService.registerKey(keyHash, userId);
+        
+        // 만료 시간과 사용 횟수 계산
+        Long expiresAt = System.currentTimeMillis() / 1000 + (decryptionConfig.getKey().getExpirationDays() * 24 * 60 * 60);
+        Integer remainingUses = decryptionConfig.getKey().getDefaultUses();
+        String keyType = decryptionConfig.getKey().getType();
+        
+        String blockchainTxHash = blockchainService.registerKey(keyHash, userId, expiresAt, remainingUses, keyType);
         saveBlockchainTransaction(blockchainTxHash, "CCTV_KEY_ISSUANCE");
         return blockchainTxHash;
     }
@@ -349,9 +412,10 @@ public class DecryptionServiceImpl implements DecryptionService {
             return true;
         }
         
-        boolean isRegistered = blockchainService.isKeyRegistered(decryptionKey.getKeyHash());
-        boolean isRevoked = blockchainService.isKeyRevoked(decryptionKey.getKeyHash());
-        return isRegistered && !isRevoked;
+        // 블록체인에서 키 유효성 직접 확인
+        boolean isValid = blockchainService.isKeyValid(decryptionKey.getKeyHash());
+        log.info("블록체인 키 유효성 확인: keyHash={}, isValid={}", decryptionKey.getKeyHash(), isValid);
+        return isValid;
     }
 
     @Transactional

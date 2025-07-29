@@ -27,9 +27,14 @@ public interface DecryptionService {
     KeyDetailResponseDto getKeyByHash(String keyHash);
 
     /**
-     * 키 검증
+     * 키 검증 (사용자 ID 기반)
      */
     KeyVerificationResponseDto verifyKey(KeyVerificationRequestDto requestDto, Long userId);
+    
+    /**
+     * 키 검증 (토큰과 카메라 ID로 검증)
+     */
+    KeyVerificationResponseDto verifyKeyByTokenAndCamera(KeyVerificationRequestDto requestDto);
 
     /**
      * 키 취소
