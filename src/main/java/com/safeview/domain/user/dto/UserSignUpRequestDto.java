@@ -25,9 +25,6 @@ public class UserSignUpRequestDto {
     @NotBlank(message = "이름은 필수 항목입니다.")
     private String name;
 
-    @NotNull(message = "역할은 필수 항목입니다.")
-    private Role role;
-
     @NotBlank(message = "주소는 필수 항목입니다.")
     private String address;
 
@@ -45,7 +42,7 @@ public class UserSignUpRequestDto {
                 .email(this.email)
                 .password(encodedPassword) // 암호화된 비밀번호를 사용
                 .name(this.name)
-                .role(this.role)
+                .role(Role.USER)
                 .address(this.address)
                 .phone(this.phone)
                 .gender(this.gender)

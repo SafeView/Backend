@@ -1,7 +1,7 @@
 package com.safeview.global.exception;
 
-import com.safeview.global.ApiResponse;
-import com.safeview.global.ErrorCode;
+import com.safeview.global.response.ApiResponse;
+import com.safeview.global.response.ErrorCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,15 +13,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Object> handleApiException(ApiException e) {
         ErrorCode errorCode = e.getErrorCode();
-        return handleExceptionInternal(errorCode);
+        return handleExceptionInternal(errorCode, e.getData());
     }
 
-    private ResponseEntity<Object> handleExceptionInternal(ErrorCode errorCode) {
+    private ResponseEntity<Object> handleExceptionInternal(ErrorCode errorCode, Object data) {
         return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeErrorResponse(errorCode));
+                .body(makeErrorResponse(errorCode, data));
     }
 
-    private ApiResponse<Object> makeErrorResponse(ErrorCode errorCode) {
-        return ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), null);
+    private ApiResponse<Object> makeErrorResponse(ErrorCode errorCode, Object data) {
+        return ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), data);
     }
 } 

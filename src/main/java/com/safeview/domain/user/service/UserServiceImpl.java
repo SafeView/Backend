@@ -4,7 +4,7 @@ import com.safeview.domain.user.dto.*;
 import com.safeview.domain.user.entity.User;
 import com.safeview.domain.user.repository.UserRepository;
 import com.safeview.global.exception.ApiException;
-import com.safeview.global.ErrorCode;
+import com.safeview.global.response.ErrorCode;
 import com.safeview.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -52,11 +52,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public EmailCheckResponseDto checkEmail(String email) {
         boolean exists = userRepository.findByEmail(email).isPresent();
-        String message = exists ? "이미 존재하는 이메일입니다." : "사용 가능한 이메일입니다.";
+        
         if (exists) {
-            throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS, new EmailCheckResponseDto(true, message));
+            throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS, new EmailCheckResponseDto(false));
         }
-        return new EmailCheckResponseDto(false, message);
+        
+        return new EmailCheckResponseDto(true);
     }
 
     @Override

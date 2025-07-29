@@ -1,4 +1,4 @@
-package com.safeview.global;
+package com.safeview.global.response;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
