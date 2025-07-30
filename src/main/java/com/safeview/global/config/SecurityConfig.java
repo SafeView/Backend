@@ -6,7 +6,6 @@ import com.safeview.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,6 +33,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // ✅ 인증 없이 허용할 API 경로
                         .requestMatchers("/api/auth/**").permitAll() // ex: /api/auth/login, signup 등
+                        .requestMatchers("/api/users/**").permitAll()
+                        
+                        // ✅ decryption API는 인증 필수
+                        .requestMatchers("/api/decryption/**").authenticated()
 
                         // ✅ 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()

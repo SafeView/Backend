@@ -1,6 +1,6 @@
 package com.safeview.global.exception;
 
-import com.safeview.global.ErrorCode;
+import com.safeview.global.response.ErrorCode;
 import lombok.Getter;
 
 @Getter
