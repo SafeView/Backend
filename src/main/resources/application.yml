@@ -19,6 +19,10 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: 36000000
 
+ai:
+  server:
+    url: http://localhost:8000
+
 # CCTV 복호화 설정
 cctv:
   decryption:
