@@ -15,7 +15,8 @@ public enum ErrorCode {
     FORBIDDEN(HttpStatus.FORBIDDEN, "403", "금지된 요청입니다."),
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER4091", "이미 존재하는 이메일입니다."),
     PHONE_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER4092", "이미 존재하는 전화번호입니다."),
-    NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER4093", "이미 사용 중인 닉네임입니다.");
+    NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER4093", "이미 사용 중인 닉네임입니다."),
+    VIDEO_NOT_FOUND(HttpStatus.BAD_REQUEST, "4001", "비디오를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
