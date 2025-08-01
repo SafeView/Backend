@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserLoginResponseDto login(UserLoginRequestDto request) {
+    public UserLoginResult login(UserLoginRequestDto request) {
         // 이메일로 유저 조회
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
@@ -74,7 +74,10 @@ public class UserServiceImpl implements UserService {
         // JWT 생성
         String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
 
+        UserLoginResponseDto userInfo = new UserLoginResponseDto(user.getEmail(), user.getName());
+
+
         // 사용자 정보 함께 응답
-        return new UserLoginResponseDto(token, user.getEmail(), user.getName());
+        return new UserLoginResult(token, userInfo);
     }
 }
