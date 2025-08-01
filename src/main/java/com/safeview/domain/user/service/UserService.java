@@ -7,6 +7,6 @@ public interface UserService {
 
     UserSignUpResponseDto signUp(UserSignUpRequestDto requestDto);
     EmailCheckResponseDto checkEmail(String email);
-    UserLoginResponseDto login(UserLoginRequestDto requestDto);
+    UserLoginResult login(UserLoginRequestDto requestDto);
 
 }
