@@ -37,6 +37,7 @@ public class SecurityConfig {
                         
                         // ✅ decryption API는 인증 필수
                         .requestMatchers("/api/decryption/**").authenticated()
+                        .requestMatchers("/api/videos/**").authenticated()
 
                         // ✅ 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
