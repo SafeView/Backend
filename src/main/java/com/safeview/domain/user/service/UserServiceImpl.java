@@ -64,11 +64,11 @@ public class UserServiceImpl implements UserService {
     public UserLoginResult login(UserLoginRequestDto request) {
         // 이메일로 유저 조회
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 이메일입니다."));
 
         // 비밀번호 일치 확인
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new ApiException(ErrorCode.INVALID_PASSWORD, "비밀번호가 일치하지 않습니다.");
         }
 
         // JWT 생성
@@ -84,7 +84,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserInfoResponseDto getUserInfoById(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "해당 사용자가 존재하지 않습니다."));
 
         return UserInfoResponseDto.builder()
                 .id(user.getId())

@@ -3,7 +3,9 @@ package com.safeview.domain.user.controller;
 import com.safeview.domain.user.dto.*;
 import com.safeview.domain.user.service.UserLoginResult;
 import com.safeview.domain.user.service.UserService;
+import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
+import com.safeview.global.response.ErrorCode;
 import com.safeview.global.response.SuccessCode;
 import com.safeview.global.security.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,13 +52,18 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserInfoResponseDto> getMyInfo(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<UserInfoResponseDto>> getMyInfo(HttpServletRequest request) {
         // ✅ 쿠키에서 토큰 추출
         String token = jwtTokenProvider.resolveTokenFromCookie(request);
 
+        // ✅ 토큰 존재 여부 검증
+        if (token == null) {
+            throw new ApiException(ErrorCode.MISSING_JWT_TOKEN);
+        }
+
         // ✅ 토큰 유효성 검증
-        if (token == null || !jwtTokenProvider.validateToken(token)) {
-            return ResponseEntity.status(401).build(); // UNAUTHORIZED
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new ApiException(ErrorCode.INVALID_JWT_TOKEN);
         }
 
         // ✅ 토큰에서 userId 추출
@@ -65,7 +72,7 @@ public class AuthController {
         // ✅ userId 기반으로 사용자 정보 조회
         UserInfoResponseDto userInfo = userService.getUserInfoById(userId);
 
-        return ResponseEntity.ok(userInfo);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, userInfo);
     }
 
 }
