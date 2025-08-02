@@ -109,7 +109,7 @@ public class JwtTokenProvider {
         if (request.getCookies() == null) return null;
 
         for (Cookie cookie : request.getCookies()) {
-            if ("Authorization".equals(cookie.getName())) {
+            if ("accessToken".equals(cookie.getName())) {
                 String value = cookie.getValue();
                 return value.startsWith("Bearer ") ? value.substring(7) : value;
             }
