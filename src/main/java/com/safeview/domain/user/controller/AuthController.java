@@ -5,15 +5,14 @@ import com.safeview.domain.user.service.UserLoginResult;
 import com.safeview.domain.user.service.UserService;
 import com.safeview.global.response.ApiResponse;
 import com.safeview.global.response.SuccessCode;
+import com.safeview.global.security.JwtTokenProvider;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -21,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     //  로그인 성공 → 200 OK + 응답 바디 포함
     @PostMapping("/login")
@@ -47,6 +47,25 @@ public class AuthController {
 
         // 응답에는 사용자 정보만 포함
         return ApiResponse.toResponseEntity(SuccessCode.OK, result.getUserInfo());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserInfoResponseDto> getMyInfo(HttpServletRequest request) {
+        // ✅ 쿠키에서 토큰 추출
+        String token = jwtTokenProvider.resolveTokenFromCookie(request);
+
+        // ✅ 토큰 유효성 검증
+        if (token == null || !jwtTokenProvider.validateToken(token)) {
+            return ResponseEntity.status(401).build(); // UNAUTHORIZED
+        }
+
+        // ✅ 토큰에서 userId 추출
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        // ✅ userId 기반으로 사용자 정보 조회
+        UserInfoResponseDto userInfo = userService.getUserInfoById(userId);
+
+        return ResponseEntity.ok(userInfo);
     }
 
 }
