@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Base64;
@@ -100,5 +103,17 @@ public class JwtTokenProvider {
             System.out.println("JWT 서명 검증에 실패했습니다.");
         }
         return false;
+    }
+
+    public String resolveTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("accessToken".equals(cookie.getName())) {
+                String value = cookie.getValue();
+                return value.startsWith("Bearer ") ? value.substring(7) : value;
+            }
+        }
+        return null;
     }
 }
