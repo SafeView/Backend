@@ -80,4 +80,23 @@ public class UserServiceImpl implements UserService {
         // 사용자 정보 함께 응답
         return new UserLoginResult(token, userInfo);
     }
+
+    @Override
+    public UserInfoResponseDto getUserInfoById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
+
+        return UserInfoResponseDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .address(user.getAddress())
+                .phone(user.getPhone())
+                .gender(user.getGender())
+                .birthday(user.getBirthday())
+                .role(user.getRole().name())
+                .createdAt(user.getCreatedAt().toString())
+                .updatedAt(user.getUpdatedAt().toString())
+                .build();
+    }
 }
