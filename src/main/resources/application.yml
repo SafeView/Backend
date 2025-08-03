@@ -23,6 +23,10 @@ ai:
   server:
     url: http://localhost:8000
 
+api:
+  internal:
+    ai-server-key : ${AI_SERVER_API_KEY}
+
 # CCTV 복호화 설정
 cctv:
   decryption:
