@@ -37,6 +37,11 @@ public interface DecryptionService {
     KeyVerificationResponseDto verifyKeyByUserIdAndToken(KeyVerificationRequestDto requestDto, Long userId);
 
     /**
+     * 키 검증 (접근 토큰 + 카메라 ID로 검증)
+     */
+    KeyVerificationResponseDto verifyKeyByToken(KeyVerificationRequestDto requestDto);
+
+    /**
      * 키 취소
      */
     void revokeKey(KeyRevocationRequestDto requestDto, Long userId);

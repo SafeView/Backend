@@ -2,14 +2,18 @@ package com.safeview.domain.decryption.controller;
 
 import com.safeview.domain.decryption.dto.*;
 import com.safeview.domain.decryption.service.DecryptionService;
+import com.safeview.global.config.ApiKeyValidator;
 import com.safeview.global.response.ApiResponse;
-import com.safeview.global.response.SuccessCode;
+import com.safeview.global.response.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import static com.safeview.global.response.ErrorCode.INVALID_API_KEY;
 
 @Slf4j
 @RestController
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class DecryptionController {
 
     private final DecryptionService decryptionService;
+    private final ApiKeyValidator apiKeyValidator;
 
     /**
      * CCTV 복호화 키 발급
@@ -77,6 +82,30 @@ public class DecryptionController {
         
         KeyVerificationResponseDto response = decryptionService.verifyKeyByUserIdAndToken(requestDto, userId);
         
+        return ResponseEntity.ok()
+                .body(ApiResponse.onSuccessWithMessage(response, "키 검증이 완료되었습니다."));
+    }
+
+    /**
+     * AI 서버 통신 전용 복호화키 검증 컨트롤러 -> AI 서버 전용 API KEY + 접근 토큰 + 카메랴 ID
+     */
+    @PostMapping("/keys/verify/ai")
+    public ResponseEntity<ApiResponse<KeyVerificationResponseDto>> verifyKeyAI(
+            @RequestHeader("AiApiKey") String aiApiKey,
+            @Valid @RequestBody KeyVerificationRequestDto requestDto) {
+
+        log.info("키 검증 요청: aiApiKey={}, accessToken={}, cameraId={}",
+                aiApiKey, requestDto.getAccessToken(), requestDto.getCameraId());
+
+        // API Key 검증
+        if (!apiKeyValidator.isValidApiKey(aiApiKey)) {
+            log.warn("Invalid API Key provided: {}", aiApiKey);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.onFailure(ErrorCode.INVALID_API_KEY));
+        }
+
+        KeyVerificationResponseDto response = decryptionService.verifyKeyByToken(requestDto);
+
         return ResponseEntity.ok()
                 .body(ApiResponse.onSuccessWithMessage(response, "키 검증이 완료되었습니다."));
     }
