@@ -34,7 +34,11 @@ public class SecurityConfig {
                         // ✅ 인증 없이 허용할 API 경로
                         .requestMatchers("/api/auth/**").permitAll() // ex: /api/auth/login, signup 등
                         .requestMatchers("/api/users/**").permitAll()
-                        
+
+                        // AI 서버 키 검증 엔드포인트만 혀용
+                        .requestMatchers("/api/decryption/keys/verify/ai").permitAll()
+
+
                         // ✅ decryption API는 인증 필수
                         .requestMatchers("/api/decryption/**").authenticated()
                         .requestMatchers("/api/videos/**").authenticated()
