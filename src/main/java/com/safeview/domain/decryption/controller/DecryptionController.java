@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,9 +26,10 @@ public class DecryptionController {
     private final ApiKeyValidator apiKeyValidator;
 
     /**
-     * CCTV 복호화 키 발급
+     * CCTV 복호화 키 발급 (MODERATOR, ADMIN만 가능)
      */
     @PostMapping("/keys")
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<KeyIssuanceResponseDto>> issueKey(
             @AuthenticationPrincipal Long userId) {
         
@@ -40,9 +42,10 @@ public class DecryptionController {
     }
 
     /**
-     * 키 목록 조회 (페이징)
+     * 키 목록 조회 (페이징) (MODERATOR, ADMIN만 가능)
      */
     @GetMapping("/keys")
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN')")
     public ApiResponse<KeyListResponseDto> getKeyList(
             @AuthenticationPrincipal Long userId,
             @RequestParam(defaultValue = "0") int page,
@@ -70,9 +73,10 @@ public class DecryptionController {
     }
 
     /**
-     * 복호화키 검증 (CCTV 모자이크 해제용) - 사용자 ID + 접근 토큰 + 카메라 ID로 검증
+     * 복호화키 검증 (CCTV 모자이크 해제용) - 사용자 ID + 접근 토큰 + 카메라 ID로 검증 (MODERATOR, ADMIN만 가능)
      */
     @PostMapping("/keys/verify")
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<KeyVerificationResponseDto>> verifyKey(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody KeyVerificationRequestDto requestDto) {
@@ -111,9 +115,10 @@ public class DecryptionController {
     }
 
     /**
-     * 키 취소
+     * 키 취소 (MODERATOR, ADMIN만 가능)
      */
     @DeleteMapping("/keys")
+    @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> revokeKey(
             @Valid @RequestBody KeyRevocationRequestDto requestDto,
             @AuthenticationPrincipal Long userId) {
@@ -127,9 +132,10 @@ public class DecryptionController {
     }
 
     /**
-     * 블록체인 트랜잭션 조회
+     * 블록체인 트랜잭션 조회 (MODERATOR, ADMIN만 가능)
      */
     @GetMapping("/transactions/{txHash}")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ApiResponse<BlockchainTransactionResponseDto> getTransaction(@PathVariable String txHash) {
         log.info("블록체인 트랜잭션 조회 요청: txHash={}", txHash);
         

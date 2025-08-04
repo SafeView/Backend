@@ -28,10 +28,6 @@ public class User extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
-    private Role role;
-
     @Column(name = "address", nullable = false)
     private String address;
 
@@ -44,4 +40,55 @@ public class User extends BaseEntity {
 
     @Column(name = "birthday", nullable = false)
     private String birthday;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Role role;
+
+    // 사용자 생성 메서드 (기본 역할: USER)
+    public static User createUser(String email, String password, String name, String address, String phone, Gender gender, String birthday) {
+        return User.builder()
+                .email(email)
+                .password(password)
+                .name(name)
+                .address(address)
+                .phone(phone)
+                .gender(gender)
+                .birthday(birthday)
+                .role(Role.USER)
+                .build();
+    }
+
+    // 관리자 생성 메서드
+    public static User createAdmin(String email, String password, String name, String address, String phone, Gender gender, String birthday) {
+        return User.builder()
+                .email(email)
+                .password(password)
+                .name(name)
+                .address(address)
+                .phone(phone)
+                .gender(gender)
+                .birthday(birthday)
+                .role(Role.ADMIN)
+                .build();
+    }
+
+    // 중간 관리자 생성 메서드
+    public static User createModerator(String email, String password, String name, String address, String phone, Gender gender, String birthday) {
+        return User.builder()
+                .email(email)
+                .password(password)
+                .name(name)
+                .address(address)
+                .phone(phone)
+                .gender(gender)
+                .birthday(birthday)
+                .role(Role.MODERATOR)
+                .build();
+    }
+
+    // 역할 업데이트 메서드
+    public void updateRole(Role newRole) {
+        this.role = newRole;
+    }
 }

@@ -48,7 +48,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userId)) // 사용자 ID 저장
-                .claim("role", role)               // 권한 클레임 추가
+                .claim("role", role.name())        // Role enum의 name() 사용
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS256) // 서명 알고리즘 및 키 지정
@@ -68,17 +68,19 @@ public class JwtTokenProvider {
     }
 
     /**
-     * ✅ 토큰에서 Role 추출
+     * ✅ 토큰에서 Role 추출 (ROLE_ 접두사 추가)
      */
     public String getRoleFromToken(String token) {
-        return (String) Jwts.parserBuilder()
+        String roleName = (String) Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
                 .get("role");
+        
+        // ROLE_ 접두사 추가
+        return "ROLE_" + roleName;
     }
-
 
     public List<SimpleGrantedAuthority> getAuthorities(String role) {
         return List.of(new SimpleGrantedAuthority(role));
