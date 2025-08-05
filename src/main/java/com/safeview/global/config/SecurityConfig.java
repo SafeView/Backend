@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -35,9 +37,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll() // ex: /api/auth/login, signup 등
                         .requestMatchers("/api/users/**").permitAll()
 
-                        // AI 서버 키 검증 엔드포인트만 혀용
+                        // AI 서버 키 검증 엔드포인트만 허용
                         .requestMatchers("/api/decryption/keys/verify/ai").permitAll()
 
+                        // ✅ 관리자 API는 ADMIN 권한 필요
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // ✅ decryption API는 인증 필수
                         .requestMatchers("/api/decryption/**").authenticated()

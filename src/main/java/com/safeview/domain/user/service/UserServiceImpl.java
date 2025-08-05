@@ -76,7 +76,6 @@ public class UserServiceImpl implements UserService {
 
         UserLoginResponseDto userInfo = new UserLoginResponseDto(user.getEmail(), user.getName());
 
-
         // 사용자 정보 함께 응답
         return new UserLoginResult(token, userInfo);
     }
