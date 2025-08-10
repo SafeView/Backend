@@ -23,9 +23,13 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    // 🕓 토큰 만료 시간 (ms 단위)
+    // 🕓 Access Token 만료 시간 (ms 단위) - 1시간
     @Value("${jwt.expiration}")
-    private long expirationTime;
+    private long accessTokenExpirationTime;
+
+    // 🕓 Refresh Token 만료 시간 (ms 단위) - 7일
+    @Value("${jwt.refresh-expiration:604800000}")
+    private long refreshTokenExpirationTime;
 
     private Key key;
 
@@ -37,21 +41,40 @@ public class JwtTokenProvider {
     }
 
     /**
-     * ✅ 토큰 생성
+     * ✅ Access Token 생성
      * @param userId 사용자 식별자
      * @param role 사용자 역할 (예: ROLE_USER)
      * @return 생성된 JWT 문자열
      */
-    public String generateToken(Long userId, Role role) {
+    public String generateAccessToken(Long userId, Role role) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationTime);
+        Date expiryDate = new Date(now.getTime() + accessTokenExpirationTime);
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userId)) // 사용자 ID 저장
                 .claim("role", role.name())        // Role enum의 name() 사용
+                .claim("type", "ACCESS")           // 토큰 타입 구분
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS256) // 서명 알고리즘 및 키 지정
+                .compact();
+    }
+
+    /**
+     * ✅ Refresh Token 생성
+     * @param userId 사용자 식별자
+     * @return 생성된 Refresh Token 문자열
+     */
+    public String generateRefreshToken(Long userId) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + refreshTokenExpirationTime);
+
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId)) // 사용자 ID 저장
+                .claim("type", "REFRESH")           // 토큰 타입 구분
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -80,6 +103,42 @@ public class JwtTokenProvider {
         
         // ROLE_ 접두사 추가
         return "ROLE_" + roleName;
+    }
+
+    /**
+     * ✅ 토큰 타입 확인
+     */
+    public String getTokenType(String token) {
+        return (String) Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("type");
+    }
+
+    /**
+     * ✅ Refresh Token인지 확인
+     */
+    public boolean isRefreshToken(String token) {
+        try {
+            String tokenType = getTokenType(token);
+            return "REFRESH".equals(tokenType);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * ✅ Access Token인지 확인
+     */
+    public boolean isAccessToken(String token) {
+        try {
+            String tokenType = getTokenType(token);
+            return "ACCESS".equals(tokenType);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public List<SimpleGrantedAuthority> getAuthorities(String role) {
@@ -112,6 +171,21 @@ public class JwtTokenProvider {
 
         for (Cookie cookie : request.getCookies()) {
             if ("accessToken".equals(cookie.getName())) {
+                String value = cookie.getValue();
+                return value.startsWith("Bearer ") ? value.substring(7) : value;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * ✅ Refresh Token을 쿠키에서 추출
+     */
+    public String resolveRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("refreshToken".equals(cookie.getName())) {
                 String value = cookie.getValue();
                 return value.startsWith("Bearer ") ? value.substring(7) : value;
             }
