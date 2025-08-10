@@ -1,8 +1,10 @@
-package com.safeview.domain.user.controller;
+package com.safeview.domain.auth.controller;
 
-import com.safeview.domain.user.dto.*;
-import com.safeview.domain.user.service.UserLoginResult;
-import com.safeview.domain.user.service.UserService;
+import com.safeview.domain.auth.dto.UserLoginRequestDto;
+import com.safeview.domain.auth.dto.UserLoginResponseDto;
+import com.safeview.domain.auth.dto.UserInfoResponseDto;
+import com.safeview.domain.auth.service.AuthService;
+import com.safeview.domain.auth.service.UserLoginResult;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
 import com.safeview.global.response.ErrorCode;
@@ -21,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService;
+    private final AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
 
     //  로그인 성공 → 200 OK + 응답 바디 포함
@@ -30,7 +32,7 @@ public class AuthController {
             @RequestBody UserLoginRequestDto request,
             HttpServletResponse response
     ) {
-        UserLoginResult result = userService.login(request);
+        UserLoginResult result = authService.login(request);
         String token = result.getToken();
 
         // 쿠키 생성 = JWT 토큰을 "accessToken"이라는 이름의 쿠키로 만들어 내려준다
@@ -41,8 +43,6 @@ public class AuthController {
                 .path("/") // path 설정, "/"로 설정하면 전체 사이트에서 쿠키 유효
                 .maxAge(60 * 60) // 쿠키 유효 시간 (초 단위) : 1시간 유효
                 .build();
-
-
 
         // 쿠키 헤더에 추가
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -70,9 +70,8 @@ public class AuthController {
         Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
         // ✅ userId 기반으로 사용자 정보 조회
-        UserInfoResponseDto userInfo = userService.getUserInfoById(userId);
+        UserInfoResponseDto userInfo = authService.getUserInfoById(userId);
 
         return ApiResponse.toResponseEntity(SuccessCode.OK, userInfo);
     }
-
 }

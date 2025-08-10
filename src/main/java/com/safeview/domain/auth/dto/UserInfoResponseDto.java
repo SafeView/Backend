@@ -1,15 +1,14 @@
-package com.safeview.domain.user.dto;
+package com.safeview.domain.auth.dto;
 
 import com.safeview.domain.user.entity.Gender;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-/**
- * ✅ 프론트에 응답으로 전달할 사용자 정보 DTO
- */
 @Getter
-@Builder
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class UserInfoResponseDto {
     private Long id;
