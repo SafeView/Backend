@@ -1,8 +1,6 @@
 package com.safeview.domain.user.dto;
 
 import com.safeview.domain.user.entity.Gender;
-import com.safeview.domain.user.entity.Role;
-import com.safeview.domain.user.entity.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,17 +34,4 @@ public class UserSignUpRequestDto {
 
     @NotBlank(message = "생년월일은 필수 항목입니다.")
     private String birthday;
-
-    public User toEntity(String encodedPassword) {
-        return User.builder()
-                .email(this.email)
-                .password(encodedPassword) // 암호화된 비밀번호를 사용
-                .name(this.name)
-                .role(Role.USER)
-                .address(this.address)
-                .phone(this.phone)
-                .gender(this.gender)
-                .birthday(this.birthday)
-                .build();
-    }
 }

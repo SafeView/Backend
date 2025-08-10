@@ -65,7 +65,6 @@ public class AdminManagementController {
     }
 
 
-
     /**
      * 권한 요청 승인
      */

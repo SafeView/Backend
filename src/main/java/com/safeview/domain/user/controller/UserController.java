@@ -22,13 +22,14 @@ public class UserController {
 
     private final UserService userService;
 
-    // 회원가입 성공 → 201 Created + 응답 바디 포함
+    // 회원가입 성공
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserSignUpResponseDto>> signUp(@Valid @RequestBody UserSignUpRequestDto requestDto) {
             UserSignUpResponseDto responseDto = userService.signUp(requestDto);
             return ApiResponse.toResponseEntity(SuccessCode.CREATED, responseDto);
         }
 
+    // 중복 이메일 체크
     @GetMapping("/check-email")
     public ApiResponse<EmailCheckResponseDto> checkEmail(@RequestParam String email) {
         if (email == null || !email.contains("@")) {
