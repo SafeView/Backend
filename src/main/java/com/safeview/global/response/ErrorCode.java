@@ -2,6 +2,7 @@ package com.safeview.global.response;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.internal.constraintvalidators.hv.ru.INNValidator;
 import org.springframework.http.HttpStatus;
 
 @Getter

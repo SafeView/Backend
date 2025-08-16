@@ -37,8 +37,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll() // ex: /api/auth/login, signup 등
                         .requestMatchers("/api/users/**").permitAll()
 
-                        // AI 서버 키 검증 엔드포인트만 허용
+                        // AI 서버 키 검증 엔드포인트 허용
                         .requestMatchers("/api/decryption/keys/verify/ai").permitAll()
+                        .requestMatchers("/api/videos/make-entity").permitAll()
 
                         // ✅ 관리자 API는 ADMIN 권한 필요
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
