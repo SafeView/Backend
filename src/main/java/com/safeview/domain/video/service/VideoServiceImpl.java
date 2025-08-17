@@ -2,6 +2,7 @@ package com.safeview.domain.video.service;
 
 import com.safeview.domain.video.dto.DownloadResponseDto;
 import com.safeview.domain.video.dto.RecordingResponseDto;
+import com.safeview.domain.video.dto.VideoListResponseDto;
 import com.safeview.domain.video.dto.VideoResponseDto;
 import com.safeview.domain.video.entity.Video;
 import com.safeview.domain.video.repository.VideoRepository;
@@ -13,7 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.safeview.global.response.ErrorCode.VIDEO_NOT_FOUND;
 
@@ -26,6 +30,26 @@ public class VideoServiceImpl implements VideoService{
 
     @Value("${ai.server.url}")
     private String aiServerUrl;
+
+    public void makeVideoEntity(List<String> urls, Long userId) {
+
+        if(userId == null || urls == null || urls.isEmpty()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청입니다.");
+        }
+
+        for (String url : urls) {
+
+            String filename = url.substring(url.lastIndexOf("/") + 1);
+
+            Video video = Video.builder()
+                    .userId(userId) // 임시로 userId를 1로 설정, 실제 사용 시 적절한 userId로 변경 필요
+                    .filename(filename)
+                    .s3Url(url)
+                    .build();
+
+            videoRepository.save(video);
+        }
+    }
 
     public RecordingResponseDto startRecording(){
         String url = aiServerUrl + "/start_recording";
@@ -63,12 +87,44 @@ public class VideoServiceImpl implements VideoService{
         return response;
     }
 
-    public List<VideoResponseDto> getAllVideos(Long userId){
+    public List<VideoResponseDto> getAllVideosByUserId(Long userId){
         List<Video> list = videoRepository.findAllByUserId(userId);
 
         return list.stream()
                 .map(VideoResponseDto::from)
                 .toList();
+    }
+
+    public List<VideoListResponseDto> getAllVideosGroupedByUser() {
+        List<Video> videos = videoRepository.findAll();
+        Map<Long, Map<String, List<Video>>> grouped = new HashMap<>();
+
+        for (Video video : videos) {
+            Long userId = video.getUserId();
+            String baseName = video.getFilename().replace("_raw", "");
+            grouped
+                    .computeIfAbsent(userId, k -> new HashMap<>())
+                    .computeIfAbsent(baseName, k -> new ArrayList<>())
+                    .add(video);
+        }
+
+        List<VideoListResponseDto> result = new ArrayList<>();
+        for (Map.Entry<Long, Map<String, List<Video>>> userEntry : grouped.entrySet()) {
+            for (Map.Entry<String, List<Video>> fileEntry : userEntry.getValue().entrySet()) {
+                List<String> filenames = fileEntry.getValue().stream()
+                        .map(Video::getFilename)
+                        .toList();
+                List<String> s3Urls = fileEntry.getValue().stream()
+                        .map(Video::getS3Url)
+                        .toList();
+                result.add(new VideoListResponseDto(
+                        userEntry.getKey(),
+                        filenames,
+                        s3Urls
+                ));
+            }
+        }
+        return result;
     }
 
     public DownloadResponseDto downloadVideo(String filename){

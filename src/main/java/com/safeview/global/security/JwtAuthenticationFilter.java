@@ -29,6 +29,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        // ✅ /api/videos/make-entity 경로는 인증 없이 통과
+        String uri = request.getRequestURI();
+        System.out.println("JwtFilter URI: " + uri);
+        if (uri.endsWith("/api/videos/make-entity")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // ✅ 1. Authorization 헤더에서 토큰 추출
         String token = resolveToken(request);
 
