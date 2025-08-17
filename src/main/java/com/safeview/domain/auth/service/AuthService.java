@@ -6,4 +6,5 @@ import com.safeview.domain.auth.dto.UserLoginRequestDto;
 public interface AuthService {
     UserLoginResult login(UserLoginRequestDto request);
     UserInfoResponseDto getUserInfoById(Long userId);
+    String logout();
 }
