@@ -10,41 +10,63 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
 
+/*
+ * JWT 토큰 제공자 클래스
+ * 
+ * JWT 토큰의 생성, 검증, 파싱을 담당하는 클래스
+ * Access Token과 Refresh Token을 관리하며 쿠키 기반 토큰 처리
+ */
 @Component
 public class JwtTokenProvider {
 
-    // 🔐 application.yml에서 주입될 시크릿 키
+    /*
+     * JWT 시크릿 키 (application.yml에서 주입)
+     */
     @Value("${jwt.secret}")
     private String secretKey;
 
-    // 🕓 Access Token 만료 시간 (ms 단위) - 1시간
+    /*
+     * Access Token 만료 시간 (ms 단위, 기본 1시간)
+     */
     @Value("${jwt.expiration}")
     private long accessTokenExpirationTime;
 
-    // 🕓 Refresh Token 만료 시간 (ms 단위) - 7일
+    /*
+     * Refresh Token 만료 시간 (ms 단위, 기본 7일)
+     */
     @Value("${jwt.refresh-expiration:604800000}")
     private long refreshTokenExpirationTime;
 
+    /*
+     * JWT 서명에 사용할 키
+     */
     private Key key;
 
-    // ✅ Base64 인코딩된 키로 변환 (객체 초기화 시)
+    /*
+     * JWT 키 초기화
+     * 
+     * Base64 인코딩된 키로 변환하여 JWT 서명에 사용할 키 설정
+     */
     @PostConstruct
     protected void init() {
         byte[] decodedKey = Base64.getEncoder().encode(secretKey.getBytes());
         this.key = Keys.hmacShaKeyFor(decodedKey);
     }
 
-    /**
-     * ✅ Access Token 생성
+    /*
+     * Access Token 생성
+     * 
      * @param userId 사용자 식별자
-     * @param role 사용자 역할 (예: ROLE_USER)
+     * @param role 사용자 역할
      * @return 생성된 JWT 문자열
+     * 
+     * 기능: 사용자 ID, 역할, 토큰 타입을 포함한 Access Token 생성
+     * 만료 시간: 1시간
      */
     public String generateAccessToken(Long userId, Role role) {
         Date now = new Date();
@@ -60,10 +82,14 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    /**
-     * ✅ Refresh Token 생성
+    /*
+     * Refresh Token 생성
+     * 
      * @param userId 사용자 식별자
      * @return 생성된 Refresh Token 문자열
+     * 
+     * 기능: 사용자 ID와 토큰 타입을 포함한 Refresh Token 생성
+     * 만료 시간: 7일
      */
     public String generateRefreshToken(Long userId) {
         Date now = new Date();
@@ -78,8 +104,11 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    /**
-     * ✅ 토큰에서 사용자 ID 추출
+    /*
+     * 토큰에서 사용자 ID 추출
+     * 
+     * @param token JWT 토큰
+     * @return 사용자 ID
      */
     public Long getUserIdFromToken(String token) {
         return Long.parseLong(Jwts.parserBuilder()
@@ -90,8 +119,11 @@ public class JwtTokenProvider {
                 .getSubject());
     }
 
-    /**
-     * ✅ 토큰에서 Role 추출 (ROLE_ 접두사 추가)
+    /*
+     * 토큰에서 Role 추출
+     * 
+     * @param token JWT 토큰
+     * @return ROLE_ 접두사가 추가된 역할 문자열
      */
     public String getRoleFromToken(String token) {
         String roleName = (String) Jwts.parserBuilder()
@@ -105,8 +137,11 @@ public class JwtTokenProvider {
         return "ROLE_" + roleName;
     }
 
-    /**
-     * ✅ 토큰 타입 확인
+    /*
+     * 토큰 타입 확인
+     * 
+     * @param token JWT 토큰
+     * @return 토큰 타입 (ACCESS 또는 REFRESH)
      */
     public String getTokenType(String token) {
         return (String) Jwts.parserBuilder()
@@ -117,8 +152,11 @@ public class JwtTokenProvider {
                 .get("type");
     }
 
-    /**
-     * ✅ Refresh Token인지 확인
+    /*
+     * Refresh Token 여부 확인
+     * 
+     * @param token JWT 토큰
+     * @return Refresh Token인지 여부
      */
     public boolean isRefreshToken(String token) {
         try {
@@ -129,8 +167,11 @@ public class JwtTokenProvider {
         }
     }
 
-    /**
-     * ✅ Access Token인지 확인
+    /*
+     * Access Token 여부 확인
+     * 
+     * @param token JWT 토큰
+     * @return Access Token인지 여부
      */
     public boolean isAccessToken(String token) {
         try {
@@ -141,12 +182,23 @@ public class JwtTokenProvider {
         }
     }
 
+    /*
+     * 권한 목록 생성
+     * 
+     * @param role 역할 문자열
+     * @return SimpleGrantedAuthority 목록
+     */
     public List<SimpleGrantedAuthority> getAuthorities(String role) {
         return List.of(new SimpleGrantedAuthority(role));
     }
 
-    /**
-     * ✅ 토큰 유효성 검증
+    /*
+     * 토큰 유효성 검증
+     * 
+     * @param token JWT 토큰
+     * @return 토큰이 유효한지 여부
+     * 
+     * 검증 항목: 만료 여부, 서명 유효성, 형식 검증
      */
     public boolean validateToken(String token) {
         try {
@@ -166,6 +218,12 @@ public class JwtTokenProvider {
         return false;
     }
 
+    /*
+     * 쿠키에서 Access Token 추출
+     * 
+     * @param request HTTP 요청 객체
+     * @return Access Token 문자열 (Bearer 접두사 제거)
+     */
     public String resolveTokenFromCookie(HttpServletRequest request) {
         if (request.getCookies() == null) return null;
 
@@ -178,8 +236,11 @@ public class JwtTokenProvider {
         return null;
     }
 
-    /**
-     * ✅ Refresh Token을 쿠키에서 추출
+    /*
+     * 쿠키에서 Refresh Token 추출
+     * 
+     * @param request HTTP 요청 객체
+     * @return Refresh Token 문자열 (Bearer 접두사 제거)
      */
     public String resolveRefreshTokenFromCookie(HttpServletRequest request) {
         if (request.getCookies() == null) return null;
