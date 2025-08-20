@@ -22,13 +22,24 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+/**
+ * 복호화 서비스 구현체
+ * 
+ * CCTV 영상 복호화 관련 비즈니스 로직을 담당합니다.
+ * - 복호화 키 발급/검증/취소
+ * - 키 목록 조회 및 상세 정보 조회
+ * - 블록체인 트랜잭션 조회
+ * - 키 생성 및 암호화
+ * 
+ * 보안: 키 암호화, 토큰 검증, 블록체인 연동
+ * 감사: 키 사용 이력, 블록체인 트랜잭션 추적
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DecryptionServiceImpl implements DecryptionService {
 
-    // ===== Dependencies =====
     private final DecryptionKeyRepository decryptionKeyRepository;
     private final BlockchainTransactionRepository blockchainTransactionRepository;
     private final DecryptionConfig decryptionConfig;
@@ -37,6 +48,23 @@ public class DecryptionServiceImpl implements DecryptionService {
 
     // ===== 키 관리 메서드 =====
 
+    /**
+     * CCTV 복호화 키 발급
+     * 
+     * @param userId 키를 발급받을 사용자 ID
+     * @return 발급된 키 정보 (Access Token, 만료 시간, 블록체인 정보 등)
+     * 
+     * 처리 과정:
+     * 1. 기존 유효한 키 확인 (있으면 기존 키 반환)
+     * 2. 새로운 AES-256 키 생성
+     * 3. 키 해시 생성 및 암호화
+     * 4. 보안 토큰 생성
+     * 5. 블록체인에 키 등록
+     * 6. 데이터베이스에 키 저장
+     * 
+     * 보안: 키 암호화, 블록체인 등록
+     * 중복 방지: 기존 유효 키 재사용
+     */
     @Override
     @Transactional
     public KeyIssuanceResponseDto issueKey(Long userId) {
@@ -71,6 +99,20 @@ public class DecryptionServiceImpl implements DecryptionService {
         return decryptionKeyMapper.toKeyIssuanceResponse(savedKey, accessToken);
     }
 
+    /**
+     * 키 목록 조회 (페이징)
+     * 
+     * @param userId 조회할 사용자 ID
+     * @param page 페이지 번호
+     * @param size 페이지 크기
+     * @param sortBy 정렬 기준 필드
+     * @param sortDir 정렬 방향 (asc/desc)
+     * @return 페이징된 키 목록
+     * 
+     * 기능: 사용자별 키 목록을 페이징하여 조회
+     * 정렬: 지정된 필드 기준으로 정렬
+     * 빈 목록: 키가 없는 경우 빈 응답 반환
+     */
     @Override
     public KeyListResponseDto getKeyList(Long userId, int page, int size, String sortBy, String sortDir) {
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
@@ -89,6 +131,15 @@ public class DecryptionServiceImpl implements DecryptionService {
         );
     }
 
+    /**
+     * 키 해시로 조회
+     * 
+     * @param keyHash 조회할 키 해시
+     * @return 키 상세 정보
+     * 
+     * 기능: 키 해시를 기반으로 키의 상세 정보를 조회
+     * 예외: 존재하지 않는 키 해시
+     */
     @Override
     public KeyDetailResponseDto getKeyByHash(String keyHash) {
         DecryptionKey decryptionKey = findKeyByHash(keyHash);
@@ -125,6 +176,23 @@ public class DecryptionServiceImpl implements DecryptionService {
                 requestDto.getCameraId(), blockchainValid);
     }
 
+    /**
+     * 키 검증 (사용자 ID + 접근 토큰 + 카메라 ID)
+     * 
+     * @param requestDto 검증 요청 정보 (접근 토큰, 카메라 ID)
+     * @param userId 검증할 사용자 ID
+     * @return 키 검증 결과 (유효성, 복호화 토큰, 블록체인 검증 상태 등)
+     * 
+     * 처리 과정:
+     * 1. 접근 토큰으로 키 조회
+     * 2. 키 기본 유효성 검증 (사용자 ID 포함)
+     * 3. 블록체인 유효성 확인
+     * 4. 키 사용 처리 (사용 횟수 감소)
+     * 5. 복호화 토큰 생성
+     * 
+     * 보안: 토큰 검증, 사용자 권한 확인, 블록체인 검증
+     * 감사: 키 사용 이력 기록
+     */
     @Override
     @Transactional
     public KeyVerificationResponseDto verifyKeyByUserIdAndToken(KeyVerificationRequestDto requestDto, Long userId) {
@@ -193,6 +261,21 @@ public class DecryptionServiceImpl implements DecryptionService {
                 requestDto.getCameraId(), blockchainValid);
     }
 
+    /**
+     * 키 취소
+     * 
+     * @param requestDto 취소 요청 정보 (접근 토큰, 취소 사유)
+     * @param userId 키를 취소할 사용자 ID
+     * 
+     * 처리 과정:
+     * 1. 접근 토큰으로 키 조회
+     * 2. 키 취소 권한 검증
+     * 3. 블록체인에서 키 취소
+     * 4. 키 상태를 REVOKED로 변경
+     * 
+     * 보안: 키 소유자 권한 확인
+     * 감사: 블록체인 트랜잭션 기록
+     */
     @Override
     @Transactional
     public void revokeKey(KeyRevocationRequestDto requestDto, Long userId) {
@@ -215,6 +298,14 @@ public class DecryptionServiceImpl implements DecryptionService {
 
     // ===== 키 생성 메서드 =====
 
+    /**
+     * CCTV 복호화용 AES-256 키 생성
+     * 
+     * @return 생성된 키 (Base64 인코딩)
+     * 
+     * 기능: SecureRandom을 사용하여 암호학적으로 안전한 키 생성
+     * 보안: 설정된 키 크기만큼의 랜덤 바이트 생성
+     */
     @Override
     public String generateCCTVDecryptionKey() {
         SecureRandom secureRandom = new SecureRandom();
@@ -224,6 +315,15 @@ public class DecryptionServiceImpl implements DecryptionService {
         return java.util.Base64.getEncoder().encodeToString(keyBytes);
     }
 
+    /**
+     * 키 해시 생성 (SHA-256)
+     * 
+     * @param rawKey 원본 키
+     * @return 키 해시 (Base64 인코딩)
+     * 
+     * 기능: SHA-256 해시 알고리즘을 사용하여 키의 해시값 생성
+     * 보안: 키의 무결성 검증을 위한 해시 생성
+     */
     @Override
     public String generateKeyHash(String rawKey) {
         try {
@@ -406,6 +506,12 @@ public class DecryptionServiceImpl implements DecryptionService {
 
     /**
      * 사용자의 유효한 키 조회
+     * 
+     * @param userId 사용자 ID
+     * @return 유효한 키 (Optional)
+     * 
+     * 기능: 사용자의 활성 상태이고 만료되지 않았으며 사용 횟수가 남은 키를 조회
+     * 정렬: 발급 시간 기준 내림차순 (최신 키 우선)
      */
     private Optional<DecryptionKey> findValidKeyByUserId(Long userId) {
         return decryptionKeyRepository.findFirstByUserIdAndStatusAndExpiresAtAfterAndRemainingUsesGreaterThanOrderByIssuedAtDesc(
@@ -430,7 +536,17 @@ public class DecryptionServiceImpl implements DecryptionService {
         decryptionKeyRepository.save(updatedKey);
     }
 
-    // 블록체인 관련
+    /**
+     * 블록체인에 키 등록
+     * 
+     * @param keyHash 등록할 키 해시
+     * @param userId 사용자 ID
+     * @return 블록체인 트랜잭션 해시
+     * 
+     * 기능: 키를 블록체인에 등록하여 무결성 보장
+     * 설정: 블록체인 활성화 여부 확인
+     * 감사: 트랜잭션 이력 저장
+     */
     private String registerKeyOnBlockchain(String keyHash, Long userId) {
         log.info("블록체인 설정 확인: enabled={}", decryptionConfig.getBlockchain().isEnabled());
         

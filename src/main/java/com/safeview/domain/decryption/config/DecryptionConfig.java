@@ -5,6 +5,12 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+/*
+ * 복호화 설정 클래스
+ * 
+ * CCTV 영상 복호화 관련 설정을 관리하는 클래스
+ * 키 설정, 보안 설정, 블록체인 설정을 포함
+ */
 @Getter
 @Setter
 @Configuration

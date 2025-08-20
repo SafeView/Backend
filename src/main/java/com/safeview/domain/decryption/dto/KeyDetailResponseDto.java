@@ -5,6 +5,12 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
+/*
+ * 복호화 키 상세 정보 응답 DTO
+ * 
+ * 복호화 키의 상세 정보를 조회할 때 사용하는 DTO
+ * 키의 메타데이터, 상태, 블록체인 정보 등을 포함
+ */
 @Getter
 @Builder
 public class KeyDetailResponseDto {

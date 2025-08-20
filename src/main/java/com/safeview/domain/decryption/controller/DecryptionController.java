@@ -16,6 +16,18 @@ import org.springframework.web.bind.annotation.*;
 
 import static com.safeview.global.response.ErrorCode.INVALID_API_KEY;
 
+/**
+ * 복호화 컨트롤러
+ * 
+ * CCTV 영상 복호화 관련 API를 제공합니다.
+ * - 복호화 키 발급/검증/취소
+ * - 키 목록 조회 및 상세 정보 조회
+ * - 블록체인 트랜잭션 조회
+ * - AI 서버 전용 키 검증 API
+ * 
+ * 보안: JWT 토큰 기반 인증, API 키 검증
+ * 권한: MODERATOR, ADMIN 권한 필요
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/decryption")

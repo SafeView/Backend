@@ -11,32 +11,79 @@ import com.safeview.global.response.SuccessCode;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 사용자 컨트롤러
+ * 
+ * 사용자 관련 API를 제공합니다.
+ * - 회원가입
+ * - 이메일 중복 확인
+ * 
+ * 보안: 입력값 검증, 이메일 형식 검증
+ */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
 
     private final UserService userService;
 
-    // 회원가입 성공
+    /**
+     * 회원가입
+     * 
+     * @param requestDto 회원가입 요청 정보 (이메일, 비밀번호, 이름, 주소, 전화번호, 성별, 생년월일)
+     * @return 회원가입 성공 정보
+     * 
+     * 처리 과정:
+     * 1. 입력값 검증 (@Valid)
+     * 2. 이메일 중복 확인
+     * 3. 비밀번호 암호화
+     * 4. 사용자 정보 저장
+     * 5. 회원가입 성공 응답
+     * 
+     * 보안: 비밀번호 암호화, 입력값 검증
+     * 예외: 중복된 이메일, 유효하지 않은 입력값
+     */
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserSignUpResponseDto>> signUp(@Valid @RequestBody UserSignUpRequestDto requestDto) {
-            UserSignUpResponseDto responseDto = userService.signUp(requestDto);
-            return ApiResponse.toResponseEntity(SuccessCode.CREATED, responseDto);
-        }
+        log.info("회원가입 요청: email={}", requestDto.getEmail());
+        
+        UserSignUpResponseDto responseDto = userService.signUp(requestDto);
+        
+        log.info("회원가입 성공: email={}", requestDto.getEmail());
+        return ApiResponse.toResponseEntity(SuccessCode.CREATED, responseDto);
+    }
 
-    // 중복 이메일 체크
+    /**
+     * 이메일 중복 확인
+     * 
+     * @param email 확인할 이메일 주소
+     * @return 이메일 사용 가능 여부
+     * 
+     * 처리 과정:
+     * 1. 이메일 형식 검증
+     * 2. 데이터베이스에서 이메일 중복 확인
+     * 3. 사용 가능 여부 반환
+     * 
+     * 보안: 이메일 형식 검증
+     * 예외: 유효하지 않은 이메일 형식
+     */
     @GetMapping("/check-email")
     public ApiResponse<EmailCheckResponseDto> checkEmail(@RequestParam String email) {
+        log.info("이메일 중복 확인 요청: email={}", email);
+        
         if (email == null || !email.contains("@")) {
             throw new ApiException(ErrorCode.BAD_REQUEST, "이메일 형식이 유효하지 않습니다.");
         }
 
         EmailCheckResponseDto response = userService.checkEmail(email);
+        
+        log.info("이메일 중복 확인 완료: email={}, available={}", email, response.isAvailable());
         return ApiResponse.onSuccessWithMessage(response, "사용가능한 이메일입니다.");
     }
 }

@@ -6,6 +6,12 @@ import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
+/*
+ * 복호화 키 취소 요청 DTO
+ * 
+ * 복호화 키를 취소할 때 사용하는 DTO
+ * 접근 토큰과 취소 사유를 포함
+ */
 @Getter
 @Setter
 public class KeyRevocationRequestDto {

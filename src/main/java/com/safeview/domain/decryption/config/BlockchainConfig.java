@@ -5,6 +5,12 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+/*
+ * 블록체인 설정 클래스
+ * 
+ * 블록체인 연동 관련 설정을 관리하는 클래스
+ * RPC URL, 컨트랙트 주소, 가스 설정, 네트워크 설정을 포함
+ */
 @Getter
 @Setter
 @Configuration

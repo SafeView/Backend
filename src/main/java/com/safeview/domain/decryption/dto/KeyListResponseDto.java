@@ -6,6 +6,12 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/*
+ * 복호화 키 목록 응답 DTO
+ * 
+ * 복호화 키 목록을 조회할 때 사용하는 DTO
+ * 페이징 정보와 키 요약 정보를 포함
+ */
 @Getter
 @Builder
 public class KeyListResponseDto {
