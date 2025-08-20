@@ -4,7 +4,6 @@ import com.safeview.domain.auth.dto.UserLoginRequestDto;
 import com.safeview.domain.auth.dto.UserLoginResponseDto;
 import com.safeview.domain.auth.dto.UserInfoResponseDto;
 import com.safeview.domain.auth.service.AuthService;
-import com.safeview.domain.auth.service.UserLoginResult;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
 import com.safeview.global.response.ErrorCode;
@@ -32,7 +31,7 @@ public class AuthController {
             @RequestBody UserLoginRequestDto request,
             HttpServletResponse response
     ) {
-        UserLoginResult result = authService.login(request);
+        UserInfoResponseDto.UserLoginResult result = authService.login(request);
         String accessToken = result.getAccessToken();
         String refreshToken = result.getRefreshToken();
 

@@ -4,7 +4,6 @@ import com.safeview.domain.auth.dto.UserInfoResponseDto;
 import com.safeview.domain.auth.dto.UserLoginRequestDto;
 import com.safeview.domain.auth.dto.UserLoginResponseDto;
 import com.safeview.domain.auth.mapper.AuthMapper;
-import com.safeview.domain.auth.service.UserLoginResult;
 import com.safeview.domain.user.entity.User;
 import com.safeview.domain.user.repository.UserRepository;
 import com.safeview.global.exception.ApiException;
@@ -27,7 +26,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public UserLoginResult login(UserLoginRequestDto request) {
+    public UserInfoResponseDto.UserLoginResult login(UserLoginRequestDto request) {
         // 이메일로 유저 조회
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 이메일입니다."));
@@ -46,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
         UserLoginResponseDto userInfo = authMapper.toLoginResponseDto(user);
 
         // 사용자 정보와 토큰들 함께 응답
-        return new UserLoginResult(accessToken, refreshToken, userInfo);
+        return new UserInfoResponseDto.UserLoginResult(accessToken, refreshToken, userInfo);
     }
 
     @Override

@@ -21,4 +21,12 @@ public class UserInfoResponseDto {
     private String role;
     private String createdAt;
     private String updatedAt;
+
+    @Getter
+    @AllArgsConstructor
+    public static class UserLoginResult {
+        private String accessToken;
+        private String refreshToken;
+        private UserLoginResponseDto userInfo;
+    }
 }

@@ -5,6 +5,7 @@ import com.safeview.domain.video.dto.RecordingResponseDto;
 import com.safeview.domain.video.dto.VideoListResponseDto;
 import com.safeview.domain.video.dto.VideoResponseDto;
 import com.safeview.domain.video.entity.Video;
+import com.safeview.domain.video.mapper.VideoMapper;
 import com.safeview.domain.video.repository.VideoRepository;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ErrorCode;
@@ -27,6 +28,7 @@ public class VideoServiceImpl implements VideoService{
 
     private final VideoRepository videoRepository;
     private final RestTemplate restTemplate;
+    private final VideoMapper videoMapper;
 
     @Value("${ai.server.url}")
     private String aiServerUrl;
@@ -90,9 +92,7 @@ public class VideoServiceImpl implements VideoService{
     public List<VideoResponseDto> getAllVideosByUserId(Long userId){
         List<Video> list = videoRepository.findAllByUserId(userId);
 
-        return list.stream()
-                .map(VideoResponseDto::from)
-                .toList();
+        return videoMapper.toVideoResponseDtoList(list);
     }
 
     public List<VideoListResponseDto> getAllVideosGroupedByUser() {
@@ -111,16 +111,9 @@ public class VideoServiceImpl implements VideoService{
         List<VideoListResponseDto> result = new ArrayList<>();
         for (Map.Entry<Long, Map<String, List<Video>>> userEntry : grouped.entrySet()) {
             for (Map.Entry<String, List<Video>> fileEntry : userEntry.getValue().entrySet()) {
-                List<String> filenames = fileEntry.getValue().stream()
-                        .map(Video::getFilename)
-                        .toList();
-                List<String> s3Urls = fileEntry.getValue().stream()
-                        .map(Video::getS3Url)
-                        .toList();
-                result.add(new VideoListResponseDto(
+                result.add(videoMapper.toVideoListResponseDto(
                         userEntry.getKey(),
-                        filenames,
-                        s3Urls
+                        fileEntry.getValue()
                 ));
             }
         }
