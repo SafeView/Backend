@@ -10,11 +10,19 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/*
+ * 비디오 매퍼
+ * 
+ * Video 엔티티와 DTO 간의 변환을 담당
+ * 영상 정보 변환, 녹화/다운로드 응답 생성 기능 제공
+ */
 @Component
 public class VideoMapper {
 
-    /**
+    /*
      * Video 엔티티를 VideoResponseDto로 변환
+     * 
+     * 영상의 기본 정보를 응답 DTO로 변환
      */
     public VideoResponseDto toVideoResponseDto(Video video) {
         VideoResponseDto dto = new VideoResponseDto();
@@ -25,8 +33,10 @@ public class VideoMapper {
         return dto;
     }
 
-    /**
+    /*
      * Video 엔티티 리스트를 VideoResponseDto 리스트로 변환
+     * 
+     * 영상 목록을 응답 DTO 목록으로 변환
      */
     public List<VideoResponseDto> toVideoResponseDtoList(List<Video> videos) {
         return videos.stream()
@@ -34,8 +44,10 @@ public class VideoMapper {
                 .collect(Collectors.toList());
     }
 
-    /**
+    /*
      * Video 엔티티 리스트를 VideoListResponseDto로 변환
+     * 
+     * 사용자별 영상 목록을 관리자용 응답 DTO로 변환
      */
     public VideoListResponseDto toVideoListResponseDto(Long userId, List<Video> videos) {
         List<String> filenames = videos.stream()
@@ -49,8 +61,10 @@ public class VideoMapper {
         return new VideoListResponseDto(userId, filenames, s3Urls);
     }
 
-    /**
+    /*
      * 녹화 성공 응답 DTO 생성
+     * 
+     * 녹화 성공 시 AI 서버 응답을 위한 DTO 생성
      */
     public RecordingResponseDto toRecordingSuccessDto(String filename, String s3Url) {
         RecordingResponseDto dto = new RecordingResponseDto();
@@ -60,8 +74,10 @@ public class VideoMapper {
         return dto;
     }
 
-    /**
+    /*
      * 녹화 실패 응답 DTO 생성
+     * 
+     * 녹화 실패 시 오류 정보를 포함한 DTO 생성
      */
     public RecordingResponseDto toRecordingErrorDto(String error) {
         RecordingResponseDto dto = new RecordingResponseDto();
@@ -71,8 +87,10 @@ public class VideoMapper {
         return dto;
     }
 
-    /**
+    /*
      * 다운로드 성공 응답 DTO 생성
+     * 
+     * 다운로드 성공 시 다운로드 정보를 포함한 DTO 생성
      */
     public DownloadResponseDto toDownloadSuccessDto(String url, String filename) {
         DownloadResponseDto dto = new DownloadResponseDto();
@@ -82,8 +100,10 @@ public class VideoMapper {
         return dto;
     }
 
-    /**
+    /*
      * 다운로드 실패 응답 DTO 생성
+     * 
+     * 다운로드 실패 시 오류 정보를 포함한 DTO 생성
      */
     public DownloadResponseDto toDownloadErrorDto(String error) {
         DownloadResponseDto dto = new DownloadResponseDto();
