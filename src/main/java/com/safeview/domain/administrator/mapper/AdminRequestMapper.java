@@ -1,6 +1,5 @@
 package com.safeview.domain.administrator.mapper;
 
-import com.safeview.domain.administrator.dto.AdminCommentDto;
 import com.safeview.domain.administrator.dto.AdminRequestCreateDto;
 import com.safeview.domain.administrator.dto.AdminRequestResponseDto;
 import com.safeview.domain.administrator.dto.AdminRequestSummaryDto;
