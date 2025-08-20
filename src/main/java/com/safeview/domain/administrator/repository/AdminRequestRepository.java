@@ -14,16 +14,16 @@ import java.util.List;
 @Repository
 public interface AdminRequestRepository extends JpaRepository<AdminRequest, Long> {
 
-    // 사용자별 요청 조회 (페이지네이션 없음)
+    // 사용자별 요청 조회
     List<AdminRequest> findByUserIdOrderByCreatedAtDesc(Long userId);
 
-    // 사용자별 요청 조회 (페이지네이션 있음)
+    // 사용자별 요청 조회
     Page<AdminRequest> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
-    // 상태별 요청 조회 (페이지네이션 없음)
+    // 상태별 요청 조회 
     List<AdminRequest> findByStatusOrderByCreatedAtDesc(AdminRequestStatus status);
 
-    // 상태별 요청 조회 (페이지네이션 있음)
+    // 상태별 요청 조회
     Page<AdminRequest> findByStatusOrderByCreatedAtDesc(AdminRequestStatus status, Pageable pageable);
 
     // 사용자별 상태별 요청 조회

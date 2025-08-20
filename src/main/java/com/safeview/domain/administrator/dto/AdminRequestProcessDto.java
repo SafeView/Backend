@@ -6,6 +6,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/*
+ * 관리자 권한 요청 처리 DTO
+ * 
+ * 관리자가 권한 요청을 승인하거나 거절할 때 사용하는 DTO
+ */
 @Getter
 @Setter
 @NoArgsConstructor
