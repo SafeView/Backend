@@ -1,6 +1,5 @@
 package com.safeview.domain.administrator.service;
 
-import com.safeview.domain.administrator.dto.AdminRequestProcessDto;
 import com.safeview.domain.administrator.dto.AdminRequestResponseDto;
 import com.safeview.domain.administrator.dto.AdminRequestSummaryForAdminDto;
 import com.safeview.domain.administrator.entity.AdminRequestStatus;

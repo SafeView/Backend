@@ -4,8 +4,16 @@ import com.safeview.domain.decryption.dto.*;
 import com.safeview.domain.decryption.entity.DecryptionKey;
 
 /**
- * 통합 복호화 서비스 인터페이스
- * 키 생성, 검증, 블록체인 연동, 키 관리 기능을 모두 포함
+ * 복호화 서비스 인터페이스
+ * 
+ * CCTV 영상 복호화 관련 비즈니스 로직을 담당합니다.
+ * - 복호화 키 발급/검증/취소
+ * - 키 목록 조회 및 상세 정보 조회
+ * - 블록체인 트랜잭션 조회
+ * - 키 생성 및 암호화
+ * 
+ * 보안: 키 암호화, 토큰 검증, 블록체인 연동
+ * 감사: 키 사용 이력, 블록체인 트랜잭션 추적
  */
 public interface DecryptionService {
 

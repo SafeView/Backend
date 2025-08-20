@@ -9,6 +9,12 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/*
+ * 관리자 초기화 클래스
+ * 
+ * 애플리케이션 시작 시 기본 관리자 및 테스트 사용자를 생성하는 클래스
+ * CommandLineRunner를 구현하여 애플리케이션 시작 후 자동 실행
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -17,6 +23,12 @@ public class AdminInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /*
+     * 애플리케이션 시작 시 실행되는 초기화 메서드
+     * 
+     * 기본 관리자, 중간 관리자, 테스트 사용자를 생성
+     * 이미 존재하는 경우 생성하지 않음
+     */
     @Override
     public void run(String... args) throws Exception {
         // 관리자가 이미 존재하는지 확인

@@ -11,6 +11,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 블록체인 컨트롤러
+ * 
+ * 블록체인 관련 API를 제공합니다.
+ * - 블록체인 연결 상태 확인
+ * - 계정 잔액 조회
+ * - 키 정보 조회 및 유효성 확인
+ * - 키 사용 및 만료 처리
+ * - 긴급 키 취소
+ * - 컨트랙트 소유권 관리
+ * 
+ * 보안: 블록체인 기반 키 관리
+ * 네트워크: Sepolia 테스트넷 지원
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/blockchain")

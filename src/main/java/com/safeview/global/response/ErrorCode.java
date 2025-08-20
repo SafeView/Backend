@@ -5,6 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.internal.constraintvalidators.hv.ru.INNValidator;
 import org.springframework.http.HttpStatus;
 
+/*
+ * 에러 코드 열거형
+ * 
+ * 애플리케이션에서 사용되는 모든 에러 코드를 정의
+ * HTTP 상태 코드, 에러 코드, 에러 메시지를 포함
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
@@ -28,7 +34,18 @@ public enum ErrorCode {
     INVALID_API_KEY(HttpStatus.UNAUTHORIZED, "AUTH_003", "유효하지 않은 API Key입니다.");
 
 
+    /*
+     * HTTP 상태 코드
+     */
     private final HttpStatus httpStatus;
+    
+    /*
+     * 에러 코드
+     */
     private final String code;
+    
+    /*
+     * 에러 메시지
+     */
     private final String message;
 } 

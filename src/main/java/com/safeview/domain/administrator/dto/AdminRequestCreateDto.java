@@ -5,6 +5,11 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/*
+ * 관리자 권한 요청 생성 DTO
+ * 
+ * 사용자가 관리자 권한을 요청할 때 사용하는 DTO
+ */
 @Getter
 @NoArgsConstructor
 public class AdminRequestCreateDto {

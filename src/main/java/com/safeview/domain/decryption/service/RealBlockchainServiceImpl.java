@@ -17,6 +17,17 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 실제 블록체인 연동 서비스 구현체
+ * 
+ * Web3j를 사용하여 실제 블록체인과 연동하는 서비스입니다.
+ * - 스마트 컨트랙트 호출 (키 등록/취소/사용)
+ * - 블록체인 상태 조회
+ * - 시뮬레이션 모드 지원
+ * 
+ * 보안: 개인키 관리, 트랜잭션 서명
+ * 네트워크: Sepolia 테스트넷, Web3j 라이브러리 사용
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -49,6 +60,25 @@ public class RealBlockchainServiceImpl implements BlockchainService {
 
     // ===== 키 관리 =====
 
+    /**
+     * 키 해시를 블록체인에 등록
+     * 
+     * @param keyHash 키 해시
+     * @param userId 사용자 ID
+     * @param expiresAt 만료 시간 (Unix timestamp)
+     * @param remainingUses 남은 사용 횟수
+     * @param keyType 키 타입
+     * @return 블록체인 트랜잭션 해시
+     * 
+     * 처리 과정:
+     * 1. Web3j 초기화
+     * 2. 시뮬레이션 모드 확인
+     * 3. 스마트 컨트랙트 호출 또는 더미 트랜잭션 생성
+     * 4. 트랜잭션 해시 반환
+     * 
+     * 보안: 개인키로 트랜잭션 서명
+     * 시뮬레이션: 개발/테스트 환경 지원
+     */
     @Override
     public String registerKey(String keyHash, Long userId, Long expiresAt, Integer remainingUses, String keyType) {
         try {
@@ -75,6 +105,22 @@ public class RealBlockchainServiceImpl implements BlockchainService {
         }
     }
 
+    /**
+     * 키를 블록체인에서 취소
+     * 
+     * @param keyHash 취소할 키 해시
+     * @param userId 사용자 ID
+     * @return 블록체인 트랜잭션 해시
+     * 
+     * 처리 과정:
+     * 1. Web3j 초기화
+     * 2. 시뮬레이션 모드 확인
+     * 3. 스마트 컨트랙트 호출 또는 더미 트랜잭션 생성
+     * 4. 트랜잭션 해시 반환
+     * 
+     * 보안: 키 소유자 권한 확인
+     * 시뮬레이션: 개발/테스트 환경 지원
+     */
     @Override
     public String revokeKey(String keyHash, Long userId) {
         try {
@@ -99,6 +145,15 @@ public class RealBlockchainServiceImpl implements BlockchainService {
         }
     }
 
+    /**
+     * 키 사용 (사용 횟수 감소)
+     * 
+     * @param keyHash 사용할 키 해시
+     * @return 블록체인 트랜잭션 해시
+     * 
+     * 기능: 키 사용 시 블록체인에서 사용 횟수를 감소시킴
+     * 시뮬레이션: 개발/테스트 환경 지원
+     */
     @Override
     public String useKey(String keyHash) {
         try {
@@ -185,6 +240,17 @@ public class RealBlockchainServiceImpl implements BlockchainService {
         }
     }
 
+    /**
+     * 키 유효성 확인 (활성 + 미취소 + 미만료 + 사용횟수 > 0)
+     * 
+     * @param keyHash 확인할 키 해시
+     * @return 키 유효성 여부
+     * 
+     * 기능: 블록체인에서 키의 종합적인 유효성을 확인
+     * 시뮬레이션: 개발/테스트 환경에서는 항상 true 반환
+     * 
+     * 보안: 블록체인 기반 무결성 검증
+     */
     @Override
     public boolean isKeyValid(String keyHash) {
         try {
@@ -203,6 +269,15 @@ public class RealBlockchainServiceImpl implements BlockchainService {
         }
     }
 
+    /**
+     * 키 정보 조회
+     * 
+     * @param keyHash 조회할 키 해시
+     * @return 키 정보 (소유자, 사용자 ID, 발급/만료 시간, 사용 횟수 등)
+     * 
+     * 기능: 블록체인에서 키의 상세 정보를 조회
+     * 시뮬레이션: 개발/테스트 환경에서는 더미 데이터 반환
+     */
     @Override
     public KeyInfo getKeyInfo(String keyHash) {
         try {
@@ -294,6 +369,19 @@ public class RealBlockchainServiceImpl implements BlockchainService {
 
     // ===== 관리자 기능 =====
 
+    /**
+     * 긴급 키 취소 (관리자만)
+     * 
+     * @param keyHash 긴급 취소할 키 해시
+     * @return 블록체인 트랜잭션 해시
+     * 
+     * 기능: 관리자가 긴급 상황에서 키를 즉시 취소
+     * 권한: 관리자 권한 필요
+     * 시뮬레이션: 개발/테스트 환경 지원
+     * 
+     * 보안: 관리자 권한 검증
+     * 감사: 긴급 취소 이력 기록
+     */
     @Override
     public String emergencyRevokeKey(String keyHash) {
         try {
@@ -318,6 +406,16 @@ public class RealBlockchainServiceImpl implements BlockchainService {
         }
     }
 
+    /**
+     * 컨트랙트 소유자 변경
+     * 
+     * @param newOwner 새로운 소유자 주소
+     * @return 블록체인 트랜잭션 해시
+     * 
+     * 기능: 스마트 컨트랙트의 소유권을 다른 주소로 변경
+     * 권한: 현재 소유자만 실행 가능
+     * 시뮬레이션: 개발/테스트 환경 지원
+     */
     @Override
     public String transferOwnership(String newOwner) {
         try {
@@ -344,6 +442,16 @@ public class RealBlockchainServiceImpl implements BlockchainService {
 
     // ===== 블록체인 상태 =====
 
+    /**
+     * 블록체인 연결 상태 확인
+     * 
+     * @return 블록체인 연결 상태
+     * 
+     * 기능: Web3j를 통해 블록체인 네트워크 연결 상태 확인
+     * 체인 ID: 네트워크 식별을 위한 체인 ID 조회
+     * 
+     * 예외: 연결 실패 시 false 반환
+     */
     @Override
     public boolean isConnected() {
         try {
@@ -386,6 +494,19 @@ public class RealBlockchainServiceImpl implements BlockchainService {
 
     // ===== Private Helper Methods =====
 
+    /**
+     * Web3j 초기화
+     * 
+     * Web3j 클라이언트, 자격 증명, 가스 제공자를 초기화합니다.
+     * 
+     * 초기화 내용:
+     * - Web3j 클라이언트 생성 (HTTP 서비스)
+     * - 개인키로 자격 증명 생성
+     * - 가스 제공자 설정 (가스 가격, 가스 한도)
+     * 
+     * 보안: 개인키 관리
+     * 설정: RPC URL, 컨트랙트 주소, 네트워크 ID
+     */
     private void initializeWeb3j() throws Exception {
         if (web3j == null) {
             web3j = Web3j.build(new HttpService(rpcUrl));
@@ -396,6 +517,16 @@ public class RealBlockchainServiceImpl implements BlockchainService {
         }
     }
 
+    /**
+     * 스마트 컨트랙트 호출
+     * 
+     * @param method 호출할 메서드명
+     * @param params 메서드 파라미터
+     * @return 트랜잭션 해시
+     * 
+     * 기능: 실제 스마트 컨트랙트 메서드를 호출
+     * 현재: 시뮬레이션용 더미 트랜잭션 해시 생성
+     */
     private String callSmartContract(String method, Object... params) throws Exception {
         // 실제 스마트 컨트랙트 호출 구현
         // 현재는 시뮬레이션용 더미 트랜잭션 해시 생성

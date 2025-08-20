@@ -8,6 +8,12 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+/*
+ * 사용자 회원가입 요청 DTO
+ * 
+ * 사용자 회원가입 시 클라이언트에서 전송하는 정보
+ * 이메일, 비밀번호, 이름, 주소, 핸드폰 번호, 성별, 생년월일 포함
+ */
 @Getter
 @Setter
 public class UserSignUpRequestDto {

@@ -6,6 +6,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/*
+ * 사용자 정보 응답 DTO
+ * 
+ * 사용자의 상세 정보를 반환하는 DTO
+ */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,4 +26,12 @@ public class UserInfoResponseDto {
     private String role;
     private String createdAt;
     private String updatedAt;
+
+    @Getter
+    @AllArgsConstructor
+    public static class UserLoginResult {
+        private String accessToken;
+        private String refreshToken;
+        private UserLoginResponseDto userInfo;
+    }
 }

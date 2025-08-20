@@ -6,6 +6,11 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/*
+ * 관리자 권한 요청 응답 DTO
+ * 
+ * 관리자 권한 요청의 상세 정보를 클라이언트에게 반환하는 DTO
+ */
 @Getter
 @Setter
 public class AdminRequestResponseDto {

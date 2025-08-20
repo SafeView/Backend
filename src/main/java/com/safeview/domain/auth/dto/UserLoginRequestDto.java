@@ -5,6 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
+/*
+ * 사용자 로그인 요청 DTO
+ * 
+ * 사용자가 로그인할 때 이메일과 비밀번호를 전송하는 DTO
+ */
 @Getter
 @Setter
 public class UserLoginRequestDto {
