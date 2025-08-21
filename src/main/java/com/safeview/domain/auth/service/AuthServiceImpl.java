@@ -1,0 +1,123 @@
+package com.safeview.domain.auth.service;
+
+import com.safeview.domain.auth.dto.UserInfoResponseDto;
+import com.safeview.domain.auth.dto.UserLoginRequestDto;
+import com.safeview.domain.auth.dto.UserLoginResponseDto;
+import com.safeview.domain.auth.mapper.AuthMapper;
+import com.safeview.domain.user.entity.User;
+import com.safeview.domain.user.repository.UserRepository;
+import com.safeview.global.exception.ApiException;
+import com.safeview.global.response.ErrorCode;
+import com.safeview.global.security.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 인증 서비스 구현체
+ * 
+ * 사용자 인증 관련 비즈니스 로직을 담당합니다.
+ * - 사용자 로그인 처리 (이메일/비밀번호 검증)
+ * - JWT 토큰 생성 (Access Token, Refresh Token)
+ * - 사용자 정보 조회
+ * - 로그아웃 처리
+ * 
+ * 보안: 비밀번호 암호화 검증, JWT 토큰 관리
+ * 감사: 로그인 시도 및 성공/실패 이력
+ */
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+@Slf4j
+public class AuthServiceImpl implements AuthService {
+
+    private final UserRepository userRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthMapper authMapper;
+
+    /**
+     * 사용자 로그인 처리
+     * 
+     * @param request 로그인 요청 정보 (이메일, 비밀번호)
+     * @return 로그인 결과 (Access Token, Refresh Token, 사용자 정보)
+     * 
+     * 처리 과정:
+     * 1. 이메일로 사용자 조회
+     * 2. 비밀번호 암호화 검증
+     * 3. JWT Access Token 생성
+     * 4. JWT Refresh Token 생성
+     * 5. 사용자 정보와 토큰 반환
+     * 
+     * 보안: 비밀번호 암호화 검증, JWT 토큰 생성
+     * 예외: 존재하지 않는 이메일, 비밀번호 불일치
+     */
+    @Override
+    @Transactional
+    public UserInfoResponseDto.UserLoginResult login(UserLoginRequestDto request) {
+        log.info("사용자 로그인 시도: email={}", request.getEmail());
+        
+        // 이메일로 유저 조회
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 이메일입니다."));
+
+        // 비밀번호 일치 확인
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            log.warn("로그인 실패 - 비밀번호 불일치: email={}", request.getEmail());
+            throw new ApiException(ErrorCode.INVALID_PASSWORD, "비밀번호가 일치하지 않습니다.");
+        }
+
+        // Access Token 생성
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getRole());
+
+        // Refresh Token 생성
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+
+        UserLoginResponseDto userInfo = authMapper.toLoginResponseDto(user);
+
+        log.info("사용자 로그인 성공: userId={}, role={}", user.getId(), user.getRole());
+        
+        // 사용자 정보와 토큰들 함께 응답
+        return new UserInfoResponseDto.UserLoginResult(accessToken, refreshToken, userInfo);
+    }
+
+    /**
+     * 사용자 ID로 사용자 정보 조회
+     * 
+     * @param userId 조회할 사용자 ID
+     * @return 사용자 상세 정보
+     * 
+     * 기능: 사용자 ID를 기반으로 상세 정보 조회
+     * 포함: 기본 정보, 역할, 생성/수정 시간 등
+     * 
+     * 예외: 존재하지 않는 사용자
+     * 보안: 사용자 정보 접근 권한 검증 필요
+     */
+    @Override
+    public UserInfoResponseDto getUserInfoById(Long userId) {
+        log.info("사용자 정보 조회: userId={}", userId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "해당 사용자가 존재하지 않습니다."));
+
+        return authMapper.toUserInfoResponseDto(user);
+    }
+
+    /**
+     * 사용자 로그아웃 처리
+     * 
+     * @return 로그아웃 완료 메시지
+     * 
+     * 기능: 사용자 로그아웃 처리
+     */
+    @Override
+    public String logout() {
+        log.info("사용자 로그아웃 처리");
+        
+        // 로그아웃 처리 (현재는 단순히 메시지 반환)
+        // 향후 토큰 블랙리스트 관리나 세션 무효화 로직 추가 가능
+        return "로그아웃이 완료되었습니다.";
+    }
+}

@@ -4,10 +4,64 @@ server:
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/safeview
-    username: root
-    password: dnjswnsdud1.
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 36000000  # Access Token 만료 시간 (1시간)
+  refresh-expiration: 604800000  # Refresh Token 만료 시간 (7일)
+
+ai:
+  server:
+    url: http://localhost:8000
+
+api:
+  internal:
+    ai-server-key : ${AI_SERVER_API_KEY}
+
+# CCTV 복호화 설정
+cctv:
+  decryption:
+    key:
+      expiration-days: ${CCTV_KEY_EXPIRATION_DAYS:30}
+      type: "CCTV_AES256"
+      size: 32
+      default-uses: ${CCTV_DEFAULT_USES:90}
+    security:
+      default-level: "MEDIUM"
+      token-size: 32
+      verification-code-length: 6
+      biometric-enabled: false
+      device-fingerprint-enabled: false
+    blockchain:
+      enabled: true
+      confirmation-timeout: 60
+      gas-price: "20000000000"
+      gas-limit: "300000"
+
+# 블록체인 설정
+blockchain:
+  rpc-url: "https://sepolia.infura.io/v3/836908c575a541f79e0f5981850e765a"
+  contract-address: "0x0000000000000000000000000000000000000000"
+  private-key: "0x0000000000000000000000000000000000000000000000000000000000000000"
+  gas-price: "20000000000"
+  gas-limit: "300000"
+  network-id: 11155111
+  enabled: true
+  confirmation-timeout: 60
+  max-retries: 3
+  retry-interval: 1000
+  # Sepolia 테스트넷 설정
+  testnet: true
+  # 실제 컨트랙트 배포 전까지 시뮬레이션 모드
+  simulation-mode: true
+
