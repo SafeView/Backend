@@ -18,8 +18,8 @@ spring:
   mail:
     host: smtp.naver.com          # 네이버 SMTP 서버 주소
     port: 465                     # 네이버 SMTP 포트 번호
-    username: gl021414@naver.com  # 네이버 이메일
-    password: T57XDFCXXXCS         # 네이버 비밀번호
+    username: ${EMAIL_USERNAME}  # 네이버 이메일
+    password: ${EMAIL_PASSWORD}        # 네이버 비밀번호
     properties:
       mail:
         smtp:
