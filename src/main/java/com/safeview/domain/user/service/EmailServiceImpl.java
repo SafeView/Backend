@@ -131,11 +131,10 @@ public class EmailServiceImpl implements EmailService {
             if (emailUsername.isEmpty()) {
                 // 개발 환경에서는 콘솔에 로그 출력
                 log.info("=".repeat(50));
-                log.info("📧 [개발모드] 임시 비밀번호 이메일 발송");
-                log.info("📧 수신자: {}", email);
-                log.info("🔑 임시 비밀번호: {}", tempPassword);
+                log.info("[개발모드] 임시 비밀번호 이메일 발송");
+                log.info("수신자: {}", email);
                 log.info("=".repeat(50));
-                log.info("💡 실제 이메일 발송을 위해서는 이메일 설정이 필요합니다.");
+                log.info("실제 이메일 발송을 위해서는 이메일 설정이 필요합니다.");
                 return true;
             }
             
@@ -171,7 +170,7 @@ public class EmailServiceImpl implements EmailService {
     }
     
     /**
-     * 임시 비밀번호 이메일 내용 생성 (YOUNGFLIX 스타일)
+     * 임시 비밀번호 이메일 내용 생성
      */
     private String createTempPasswordEmailContent(String tempPassword) {
         return String.format("""
