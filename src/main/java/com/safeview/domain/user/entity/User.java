@@ -134,7 +134,7 @@ public class User extends BaseEntity {
     }
 
     /*
-     * 비밀번호 업데이트 메서드
+     * 임시 비밀번호 업데이트 메서드
      */
     public void updatePassword(String newPassword) {
         this.password = newPassword;
