@@ -15,6 +15,19 @@ spring:
       hibernate:
         format_sql: true
 
+  mail:
+    host: smtp.naver.com          # 네이버 SMTP 서버 주소
+    port: 465                     # 네이버 SMTP 포트 번호
+    username: ${EMAIL_USERNAME}  # 네이버 이메일
+    password: ${EMAIL_PASSWORD}        # 네이버 비밀번호
+    properties:
+      mail:
+        smtp:
+          auth: true              # 사용자 인증 여부
+          ssl:
+            enable: true
+            trust: smtp.naver.com
+
 jwt:
   secret: ${JWT_SECRET}
   expiration: 36000000  # Access Token 만료 시간 (1시간)
@@ -47,6 +60,7 @@ cctv:
       confirmation-timeout: 60
       gas-price: "20000000000"
       gas-limit: "300000"
+
 
 # 블록체인 설정
 blockchain:

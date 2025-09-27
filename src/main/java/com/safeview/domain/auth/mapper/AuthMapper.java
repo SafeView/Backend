@@ -1,6 +1,6 @@
 package com.safeview.domain.auth.mapper;
 
-import com.safeview.domain.auth.dto.UserInfoResponseDto;
+import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.domain.auth.dto.UserLoginResponseDto;
 import com.safeview.domain.user.entity.User;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class AuthMapper {
                 user.getName(),
                 user.getAddress(),
                 user.getPhone(),
-                user.getGender(),
+                user.getGender().name(),
                 user.getBirthday(),
                 user.getRole().name(),
                 user.getCreatedAt().toString(),

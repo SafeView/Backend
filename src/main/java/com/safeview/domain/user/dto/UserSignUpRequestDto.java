@@ -4,6 +4,7 @@ import com.safeview.domain.user.entity.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,6 +34,7 @@ public class UserSignUpRequestDto {
     private String address;
 
     @NotBlank(message = "전화번호는 필수 항목입니다.")
+    @Pattern(regexp = "^01[0-9]{8,9}$", message = "올바른 전화번호 형식이 아닙니다. (예: 01012345678)")
     private String phone;
 
     @NotNull(message = "성별은 필수 항목입니다.")

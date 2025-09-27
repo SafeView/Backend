@@ -28,7 +28,7 @@ public enum ErrorCode {
     INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED,"AUTH_001", "유효하지 않은 JWT 토큰입니다."),
     MISSING_JWT_TOKEN(HttpStatus.UNAUTHORIZED,"AUTH_002", "쿠키에 accessToken이 존재하지 않습니다."),
 
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "404", "사용자를 찾을 수 없습니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "USER_002", "비밀번호가 일치하지 않습니다."),
 
     INVALID_API_KEY(HttpStatus.UNAUTHORIZED, "AUTH_003", "유효하지 않은 API Key입니다.");

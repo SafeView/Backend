@@ -33,7 +33,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
             AuthenticationException authException
     ) throws IOException, ServletException {
 
-        // 🔐 인증 실패 → 401 상태 코드 반환
+        // 인증 실패 → 401 상태 코드 반환
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
 
@@ -41,3 +41,4 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.getWriter().write("{\"error\": \"Unauthorized access. Please log in.\"}");
     }
 }
+ 

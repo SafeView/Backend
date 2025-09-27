@@ -132,4 +132,11 @@ public class User extends BaseEntity {
     public void updateRole(Role newRole) {
         this.role = newRole;
     }
+
+    /*
+     * 임시 비밀번호 업데이트 메서드
+     */
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
+    }
 }

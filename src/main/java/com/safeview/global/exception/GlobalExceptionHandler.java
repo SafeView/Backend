@@ -3,9 +3,10 @@ package com.safeview.global.exception;
 import com.safeview.global.response.ApiResponse;
 import com.safeview.global.response.ErrorCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /*
  * 전역 예외 처리 클래스
@@ -14,7 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  * ApiException을 포함한 다양한 예외를 일관된 형태로 응답
  */
 @RestControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+public class GlobalExceptionHandler {
 
     /*
      * ApiException 처리
@@ -25,6 +26,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleApiException(ApiException e) {
         ErrorCode errorCode = e.getErrorCode();
         return handleExceptionInternal(errorCode, e.getData());
+    }
+
+    /*
+     * 잘못된 요청 본문 처리
+     * 
+     * JSON 파싱 오류나 잘못된 요청 형식을 처리
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        return handleExceptionInternal(ErrorCode.BAD_REQUEST, "잘못된 요청 형식입니다.");
+    }
+
+    /*
+     * 유효성 검증 실패 처리
+     * 
+     * @Valid 어노테이션으로 인한 유효성 검증 실패를 처리
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Object> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        String errorMessage = "입력값이 올바르지 않습니다.";
+        if (e.getBindingResult().hasFieldErrors()) {
+            errorMessage = e.getBindingResult().getFieldError().getDefaultMessage();
+        }
+        return handleExceptionInternal(ErrorCode.BAD_REQUEST, errorMessage);
     }
 
     /*

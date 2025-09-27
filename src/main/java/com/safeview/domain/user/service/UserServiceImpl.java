@@ -7,6 +7,7 @@ import com.safeview.domain.user.repository.UserRepository;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
  * 사용자 관련 비즈니스 로직을 담당합니다.
  * - 회원가입 처리 (이메일/전화번호 중복 확인, 비밀번호 암호화)
  * - 이메일 중복 확인
+ * - 사용자 정보 조회
+ * - 비밀번호 찾기 (이메일 인증)
  * 
- * 보안: 비밀번호 암호화, 중복 데이터 검증
- * 감사: 회원가입 이력 관리
+ * 보안: 비밀번호 암호화, 중복 데이터 검증, 이메일 인증
+ * 감사: 회원가입 이력 관리, 비밀번호 재설정 이력
  */
 @Service
 @RequiredArgsConstructor
@@ -27,6 +30,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     /**
      * 회원가입 처리
@@ -87,5 +92,81 @@ public class UserServiceImpl implements UserService {
         }
         
         return new EmailCheckResponseDto(true);
+    }
+
+    /**
+     * 사용자 정보 조회
+     * 
+     * @param userId 조회할 사용자 ID
+     * @return 사용자 상세 정보
+     * 
+     * 처리 과정:
+     * 1. 사용자 ID로 사용자 조회
+     * 2. 사용자 정보를 DTO로 변환
+     * 3. 사용자 정보 반환
+     * 
+     * 예외: 존재하지 않는 사용자
+     */
+    @Override
+    public UserInfoResponseDto getUserInfoById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        
+        return userMapper.toUserInfoResponseDto(user);
+    }
+
+    /**
+     * 임시 비밀번호 발송
+     * 
+     * @param requestDto 이메일 주소
+     * 
+     * 처리 과정:
+     * 1. 이메일 주소 검증
+     * 2. 사용자 존재 확인
+     * 3. 임시 비밀번호 생성
+     * 4. 사용자 비밀번호를 임시 비밀번호로 변경
+     * 5. 임시 비밀번호 이메일 발송
+     * 
+     * 보안: 이메일 주소 검증, 임시 비밀번호 암호화
+     * 예외: 등록되지 않은 이메일, 이메일 발송 실패
+     */
+    @Override
+    @Transactional
+    public void sendTempPassword(TempPasswordRequestDto requestDto) {
+        // 이메일로 사용자 조회
+        User user = userRepository.findByEmail(requestDto.getEmail())
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "등록되지 않은 이메일입니다."));
+
+        // 임시 비밀번호 생성 (8자리 랜덤)
+        String tempPassword = generateTempPassword();
+
+        // 임시 비밀번호로 사용자 비밀번호 변경
+        String encodedPassword = passwordEncoder.encode(tempPassword);
+        user.updatePassword(encodedPassword);
+        userRepository.save(user);
+
+        // 임시 비밀번호 이메일 발송
+        boolean emailSent = emailService.sendTempPassword(requestDto.getEmail(), tempPassword);
+        if (!emailSent) {
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        }
+    }
+
+
+    /*
+     * 임시 비밀번호 생성
+     * 
+     * @return 8자리 랜덤 임시 비밀번호
+     */
+    private String generateTempPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder password = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        
+        for (int i = 0; i < 8; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        
+        return password.toString();
     }
 }
