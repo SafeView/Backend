@@ -36,4 +36,10 @@ out/
 ### VS Code ###
 .vscode/
 
+### Eclipse ###
+.metadata/
+.project
+.classpath
+.settings/
+
 .env

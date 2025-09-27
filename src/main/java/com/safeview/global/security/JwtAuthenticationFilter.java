@@ -42,10 +42,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // /api/videos/make-entity 경로는 인증 없이 통과
+        // 인증 없이 통과할 경로들
         String uri = request.getRequestURI();
         System.out.println("JwtFilter URI: " + uri);
-        if (uri.endsWith("/api/videos/make-entity")) {
+        if (uri.startsWith("/api/auth/") || 
+            uri.startsWith("/api/users/") || 
+            uri.endsWith("/api/videos/make-entity") ||
+            uri.equals("/api/decryption/keys/verify/ai")) {
             filterChain.doFilter(request, response);
             return;
         }

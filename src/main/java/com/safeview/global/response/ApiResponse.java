@@ -36,9 +36,9 @@ public class ApiResponse<T> {
     private final String message;
     
     /*
-     * 응답 데이터 (null인 경우 JSON에서 제외)
+     * 응답 데이터 (null인 경우에도 JSON에 포함)
      */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private T data;
 
     /*

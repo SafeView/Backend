@@ -1,7 +1,7 @@
-package com.safeview.domain.auth.dto;
+package com.safeview.domain.user.dto;
 
-import com.safeview.domain.user.entity.Gender;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,23 +15,16 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserInfoResponseDto {
     private Long id;
     private String email;
     private String name;
     private String address;
     private String phone;
-    private Gender gender;
+    private String gender;
     private String birthday;
     private String role;
     private String createdAt;
     private String updatedAt;
-
-    @Getter
-    @AllArgsConstructor
-    public static class UserLoginResult {
-        private String accessToken;
-        private String refreshToken;
-        private UserLoginResponseDto userInfo;
-    }
 }

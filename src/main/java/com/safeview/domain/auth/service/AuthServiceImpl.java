@@ -1,8 +1,8 @@
 package com.safeview.domain.auth.service;
 
-import com.safeview.domain.auth.dto.UserInfoResponseDto;
 import com.safeview.domain.auth.dto.UserLoginRequestDto;
 import com.safeview.domain.auth.dto.UserLoginResponseDto;
+import com.safeview.domain.auth.dto.UserLoginResultDto;
 import com.safeview.domain.auth.mapper.AuthMapper;
 import com.safeview.domain.user.entity.User;
 import com.safeview.domain.user.repository.UserRepository;
@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
  * 사용자 인증 관련 비즈니스 로직을 담당합니다.
  * - 사용자 로그인 처리 (이메일/비밀번호 검증)
  * - JWT 토큰 생성 (Access Token, Refresh Token)
- * - 사용자 정보 조회
  * - 로그아웃 처리
  * 
  * 보안: 비밀번호 암호화 검증, JWT 토큰 관리
@@ -56,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
-    public UserInfoResponseDto.UserLoginResult login(UserLoginRequestDto request) {
+    public UserLoginResultDto login(UserLoginRequestDto request) {
         log.info("사용자 로그인 시도: email={}", request.getEmail());
         
         // 이메일로 유저 조회
@@ -80,29 +79,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("사용자 로그인 성공: userId={}, role={}", user.getId(), user.getRole());
         
         // 사용자 정보와 토큰들 함께 응답
-        return new UserInfoResponseDto.UserLoginResult(accessToken, refreshToken, userInfo);
-    }
-
-    /**
-     * 사용자 ID로 사용자 정보 조회
-     * 
-     * @param userId 조회할 사용자 ID
-     * @return 사용자 상세 정보
-     * 
-     * 기능: 사용자 ID를 기반으로 상세 정보 조회
-     * 포함: 기본 정보, 역할, 생성/수정 시간 등
-     * 
-     * 예외: 존재하지 않는 사용자
-     * 보안: 사용자 정보 접근 권한 검증 필요
-     */
-    @Override
-    public UserInfoResponseDto getUserInfoById(Long userId) {
-        log.info("사용자 정보 조회: userId={}", userId);
-        
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "해당 사용자가 존재하지 않습니다."));
-
-        return authMapper.toUserInfoResponseDto(user);
+        return new UserLoginResultDto(accessToken, refreshToken, userInfo);
     }
 
     /**
