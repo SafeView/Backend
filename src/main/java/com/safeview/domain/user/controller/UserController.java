@@ -4,6 +4,11 @@ import com.safeview.domain.user.dto.EmailCheckResponseDto;
 import com.safeview.domain.user.dto.UserSignUpRequestDto;
 import com.safeview.domain.user.dto.UserSignUpResponseDto;
 import com.safeview.domain.user.dto.UserUpdateRequestDto;
+import com.safeview.domain.user.dto.TempPasswordRequestDto;
+import com.safeview.domain.user.dto.TempPasswordResponseDto;
+import com.safeview.domain.user.dto.EmailVerificationRequestDto;
+import com.safeview.domain.user.dto.EmailVerificationDto;
+import com.safeview.domain.user.dto.EmailVerificationResponseDto;
 import com.safeview.domain.user.service.UserService;
 import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.global.exception.ApiException;
@@ -26,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
  * - 이메일 중복 확인
  * - 사용자 정보 조회
  * - 사용자 정보 수정
+ * - 임시 비밀번호 발송
  * 
  * 보안: 입력값 검증, 이메일 형식 검증, JWT 토큰 기반 인증
  */
@@ -143,5 +149,56 @@ public class UserController {
         
         log.info("사용자 정보 수정 완료: userId={}", userId);
         return ApiResponse.toResponseEntity(SuccessCode.OK, updatedUserInfo);
+    }
+
+    /**
+     * 임시 비밀번호 발송
+     * 
+     * @param requestDto 임시 비밀번호 발송 요청 정보
+     * @return 임시 비밀번호 발송 결과
+     */
+    @PostMapping("/temp-password")
+    public ResponseEntity<ApiResponse<TempPasswordResponseDto>> sendTempPassword(
+            @Valid @RequestBody TempPasswordRequestDto requestDto) {
+        log.info("임시 비밀번호 발송 요청: email={}", requestDto.getEmail());
+
+        TempPasswordResponseDto response = userService.sendTempPassword(requestDto);
+
+        log.info("임시 비밀번호 발송 완료: email={}", requestDto.getEmail());
+        return ApiResponse.toResponseEntity(SuccessCode.OK, response);
+    }
+
+    /**
+     * 이메일 인증번호 발송
+     * 
+     * @param requestDto 이메일 인증번호 발송 요청 정보
+     * @return 이메일 인증번호 발송 결과
+     */
+    @PostMapping("/email-verification/send")
+    public ResponseEntity<ApiResponse<EmailVerificationResponseDto>> sendEmailVerificationCode(
+            @Valid @RequestBody EmailVerificationRequestDto requestDto) {
+        log.info("이메일 인증번호 발송 요청: email={}", requestDto.getEmail());
+
+        EmailVerificationResponseDto response = userService.sendEmailVerificationCode(requestDto);
+
+        log.info("이메일 인증번호 발송 완료: email={}", requestDto.getEmail());
+        return ApiResponse.toResponseEntity(SuccessCode.OK, response);
+    }
+
+    /**
+     * 이메일 인증번호 검증
+     * 
+     * @param requestDto 이메일 인증번호 검증 요청 정보
+     * @return 이메일 인증번호 검증 결과
+     */
+    @PostMapping("/email-verification/verify")
+    public ResponseEntity<ApiResponse<EmailVerificationResponseDto>> verifyEmailCode(
+            @Valid @RequestBody EmailVerificationDto requestDto) {
+        log.info("이메일 인증번호 검증 요청: email={}", requestDto.getEmail());
+
+        EmailVerificationResponseDto response = userService.verifyEmailCode(requestDto);
+
+        log.info("이메일 인증번호 검증 완료: email={}", requestDto.getEmail());
+        return ApiResponse.toResponseEntity(SuccessCode.OK, response);
     }
 }

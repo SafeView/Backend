@@ -8,6 +8,7 @@ import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ErrorCode;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import java.security.SecureRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final EmailVerificationStore emailVerificationStore;
 
     /**
      * 회원가입 처리
@@ -55,9 +58,16 @@ public class UserServiceImpl implements UserService {
             throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        // 전화번호 중복 확인
-        if (userRepository.existsByPhone(requestDto.getPhone())) {
+        // 전화번호 중복 확인 (하이픈 제거 후 확인)
+        String phoneWithoutHyphen = requestDto.getPhone().replaceAll("-", "");
+        if (userRepository.existsByPhone(phoneWithoutHyphen)) {
             throw new ApiException(ErrorCode.PHONE_ALREADY_EXISTS);
+        }
+
+        // 이메일 인증번호 검증
+        boolean isEmailVerified = emailVerificationStore.verifyCode(requestDto.getEmail(), requestDto.getEmailVerificationCode());
+        if (!isEmailVerified) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "이메일 인증번호가 올바르지 않거나 만료되었습니다.");
         }
 
         // User 엔티티 생성
@@ -157,5 +167,112 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
 
         return userMapper.toUserInfoResponseDto(savedUser);
+    }
+
+    /**
+     * 임시 비밀번호 발송
+     * 
+     * @param requestDto 임시 비밀번호 발송 요청 정보
+     * @return 임시 비밀번호 발송 결과
+     * 
+     * 처리 과정:
+     * 1. 이메일로 사용자 조회
+     * 2. 임시 비밀번호 생성
+     * 3. 사용자 비밀번호를 임시 비밀번호로 업데이트
+     * 4. 이메일로 임시 비밀번호 발송
+     * 5. 발송 완료 메시지 반환
+     * 
+     * 예외: 존재하지 않는 사용자
+     */
+    @Override
+    @Transactional
+    public TempPasswordResponseDto sendTempPassword(TempPasswordRequestDto requestDto) {
+        // 사용자 조회
+        User user = userRepository.findByEmail(requestDto.getEmail())
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+
+        // 임시 비밀번호 생성 (8자리 영문+숫자)
+        String tempPassword = generateTempPassword();
+
+        // 사용자 비밀번호를 임시 비밀번호로 업데이트
+        String encodedTempPassword = passwordEncoder.encode(tempPassword);
+        user.updatePassword(encodedTempPassword);
+        userRepository.save(user);
+
+        // 이메일로 임시 비밀번호 발송
+        emailService.sendTempPassword(requestDto.getEmail(), tempPassword);
+
+        return new TempPasswordResponseDto("임시 비밀번호가 이메일로 발송되었습니다.");
+    }
+
+    /**
+     * 이메일 인증번호 발송
+     *
+     * @param requestDto 이메일 인증번호 발송 요청
+     * @return 발송 성공 메시지
+     */
+    @Override
+    @Transactional
+    public EmailVerificationResponseDto sendEmailVerificationCode(EmailVerificationRequestDto requestDto) {
+        // 이메일 중복 확인
+        if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
+            throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
+        // 6자리 인증번호 생성
+        String verificationCode = generateVerificationCode();
+
+        // 인증번호 저장 (5분 유효)
+        emailVerificationStore.storeVerificationCode(requestDto.getEmail(), verificationCode);
+
+        // 이메일 발송
+        emailService.sendVerificationCode(requestDto.getEmail(), verificationCode);
+
+        return new EmailVerificationResponseDto("인증번호가 이메일로 발송되었습니다.");
+    }
+
+    /**
+     * 이메일 인증번호 검증
+     *
+     * @param requestDto 이메일 인증번호 검증 요청
+     * @return 검증 성공 메시지
+     */
+    @Override
+    public EmailVerificationResponseDto verifyEmailCode(EmailVerificationDto requestDto) {
+        // 인증번호 검증
+        boolean isValid = emailVerificationStore.verifyCode(requestDto.getEmail(), requestDto.getCode());
+        
+        if (!isValid) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "인증번호가 올바르지 않거나 만료되었습니다.");
+        }
+
+        return new EmailVerificationResponseDto("이메일 인증이 완료되었습니다.");
+    }
+
+    /**
+     * 임시 비밀번호 생성
+     * 
+     * @return 8자리 임시 비밀번호 (영문 대소문자 + 숫자)
+     */
+    private String generateTempPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder(8);
+        
+        for (int i = 0; i < 8; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        
+        return password.toString();
+    }
+
+    /**
+     * 인증번호 생성
+     * 
+     * @return 6자리 인증번호
+     */
+    private String generateVerificationCode() {
+        SecureRandom random = new SecureRandom();
+        return String.format("%06d", random.nextInt(1000000));
     }
 }
