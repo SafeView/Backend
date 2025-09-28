@@ -3,8 +3,8 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/safeview
-    username: ${DB_USERNAME}
+    url: jdbc:mysql://db:3306/${DB_NAME}
+    username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
@@ -14,6 +14,19 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+  mail:
+    host: smtp.naver.com          # 네이버 SMTP 서버 주소
+    port: 465                     # 네이버 SMTP 포트 번호
+    username: ${EMAIL_USERNAME}  # 네이버 이메일
+    password: ${EMAIL_PASSWORD}        # 네이버 비밀번호
+    properties:
+      mail:
+        smtp:
+          auth: true              # 사용자 인증 여부
+          ssl:
+            enable: true
+            trust: smtp.naver.com
 
 jwt:
   secret: ${JWT_SECRET}
@@ -47,6 +60,7 @@ cctv:
       confirmation-timeout: 60
       gas-price: "20000000000"
       gas-limit: "300000"
+
 
 # 블록체인 설정
 blockchain:
