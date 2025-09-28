@@ -40,6 +40,8 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable()) // CSRF 비활성화 (JWT는 상태를 저장하지 않음)
 
+                .cors(cors -> {}) // ✅ WebConfig의 CORS 설정을 SecurityFilterChain에 반영
+
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 세션 사용 안함
                 )
