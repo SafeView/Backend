@@ -144,4 +144,11 @@ public class User extends BaseEntity {
         this.gender = gender;
         this.birthday = birthday;
     }
+
+    /*
+     * 비밀번호 업데이트
+     */
+    public void updatePassword(String password) {
+        this.password = password;
+    }
 }
