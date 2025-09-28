@@ -4,8 +4,10 @@ import com.safeview.domain.user.dto.*;
 import com.safeview.domain.user.entity.User;
 import com.safeview.domain.user.mapper.UserMapper;
 import com.safeview.domain.user.repository.UserRepository;
+import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ErrorCode;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * 회원가입 처리
@@ -87,5 +90,72 @@ public class UserServiceImpl implements UserService {
         }
         
         return new EmailCheckResponseDto(true);
+    }
+
+    /**
+     * 사용자 정보 조회
+     * 
+     * @param userId 조회할 사용자 ID
+     * @return 사용자 상세 정보
+     * 
+     * 처리 과정:
+     * 1. 사용자 ID로 사용자 조회
+     * 2. 사용자 정보를 DTO로 변환
+     * 3. 사용자 정보 반환
+     * 
+     * 예외: 존재하지 않는 사용자
+     */
+    @Override
+    public UserInfoResponseDto getUserInfoById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        
+        return userMapper.toUserInfoResponseDto(user);
+    }
+
+    /**
+     * 사용자 정보 수정
+     * 
+     * @param userId 수정할 사용자 ID
+     * @param requestDto 수정할 사용자 정보
+     * @return 수정된 사용자 정보
+     * 
+     * 처리 과정:
+     * 1. 사용자 ID로 사용자 조회
+     * 2. 전화번호 중복 확인 (다른 사용자와 중복되지 않는지)
+     * 3. 비밀번호 암호화
+     * 4. 사용자 정보 업데이트
+     * 5. 수정된 사용자 정보 반환
+     * 
+     * 예외: 존재하지 않는 사용자, 중복된 전화번호
+     */
+    @Override
+    @Transactional
+    public UserInfoResponseDto updateUserInfo(Long userId, UserUpdateRequestDto requestDto) {
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+
+        // 전화번호 중복 확인 (현재 사용자 제외)
+        if (userRepository.existsByPhoneAndIdNot(requestDto.getPhone(), userId)) {
+            throw new ApiException(ErrorCode.PHONE_ALREADY_EXISTS);
+        }
+
+        // 비밀번호 암호화
+        String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
+
+        // 사용자 정보 업데이트
+        user.updateUserInfo(
+                encodedPassword,
+                requestDto.getName(),
+                requestDto.getAddress(),
+                requestDto.getPhone(),
+                requestDto.getGender(),
+                requestDto.getBirthday()
+        );
+
+        User savedUser = userRepository.save(user);
+
+        return userMapper.toUserInfoResponseDto(savedUser);
     }
 }
