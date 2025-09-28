@@ -4,6 +4,7 @@ import com.safeview.domain.user.dto.EmailCheckResponseDto;
 import com.safeview.domain.user.dto.UserSignUpRequestDto;
 import com.safeview.domain.user.dto.UserSignUpResponseDto;
 import com.safeview.domain.user.service.UserService;
+import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
 import com.safeview.global.response.ErrorCode;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -21,8 +23,9 @@ import org.springframework.web.bind.annotation.*;
  * 사용자 관련 API를 제공합니다.
  * - 회원가입
  * - 이메일 중복 확인
+ * - 사용자 정보 조회
  * 
- * 보안: 입력값 검증, 이메일 형식 검증
+ * 보안: 입력값 검증, 이메일 형식 검증, JWT 토큰 기반 인증
  */
 @RestController
 @RequestMapping("/api/users")
@@ -85,5 +88,29 @@ public class UserController {
         
         log.info("이메일 중복 확인 완료: email={}, available={}", email, response.isAvailable());
         return ApiResponse.onSuccessWithMessage(response, "사용가능한 이메일입니다.");
+    }
+
+    /**
+     * 현재 로그인한 사용자 정보 조회
+     * 
+     * @param userId 인증된 사용자 ID
+     * @return 현재 사용자의 상세 정보
+     * 
+     * 처리 과정:
+     * 1. JWT 필터에서 인증된 사용자 ID 자동 주입
+     * 2. 사용자 정보 조회 및 반환
+     * 
+     * 보안: JWT 필터에서 이미 인증 검증 완료
+     * 예외: 존재하지 않는 사용자
+     */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserInfoResponseDto>> getMyInfo(@AuthenticationPrincipal Long userId) {
+        log.info("사용자 정보 조회 요청: userId={}", userId);
+        
+        // userId 기반으로 사용자 정보 조회
+        UserInfoResponseDto userInfo = userService.getUserInfoById(userId);
+
+        log.info("사용자 정보 조회 완료: userId={}", userId);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, userInfo);
     }
 }

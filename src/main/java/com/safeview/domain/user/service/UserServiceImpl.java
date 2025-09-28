@@ -4,6 +4,7 @@ import com.safeview.domain.user.dto.*;
 import com.safeview.domain.user.entity.User;
 import com.safeview.domain.user.mapper.UserMapper;
 import com.safeview.domain.user.repository.UserRepository;
+import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -87,5 +88,26 @@ public class UserServiceImpl implements UserService {
         }
         
         return new EmailCheckResponseDto(true);
+    }
+
+    /**
+     * 사용자 정보 조회
+     * 
+     * @param userId 조회할 사용자 ID
+     * @return 사용자 상세 정보
+     * 
+     * 처리 과정:
+     * 1. 사용자 ID로 사용자 조회
+     * 2. 사용자 정보를 DTO로 변환
+     * 3. 사용자 정보 반환
+     * 
+     * 예외: 존재하지 않는 사용자
+     */
+    @Override
+    public UserInfoResponseDto getUserInfoById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        
+        return userMapper.toUserInfoResponseDto(user);
     }
 }
