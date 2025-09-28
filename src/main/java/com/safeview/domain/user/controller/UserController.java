@@ -3,6 +3,7 @@ package com.safeview.domain.user.controller;
 import com.safeview.domain.user.dto.EmailCheckResponseDto;
 import com.safeview.domain.user.dto.UserSignUpRequestDto;
 import com.safeview.domain.user.dto.UserSignUpResponseDto;
+import com.safeview.domain.user.dto.UserUpdateRequestDto;
 import com.safeview.domain.user.service.UserService;
 import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.global.exception.ApiException;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
  * - 회원가입
  * - 이메일 중복 확인
  * - 사용자 정보 조회
+ * - 사용자 정보 수정
  * 
  * 보안: 입력값 검증, 이메일 형식 검증, JWT 토큰 기반 인증
  */
@@ -112,5 +114,34 @@ public class UserController {
 
         log.info("사용자 정보 조회 완료: userId={}", userId);
         return ApiResponse.toResponseEntity(SuccessCode.OK, userInfo);
+    }
+
+    /**
+     * 사용자 정보 수정
+     * 
+     * @param userId 인증된 사용자 ID
+     * @param requestDto 수정할 사용자 정보
+     * @return 수정된 사용자 정보
+     * 
+     * 처리 과정:
+     * 1. JWT 필터에서 인증된 사용자 ID 자동 주입
+     * 2. 전화번호 중복 확인 (다른 사용자와 중복되지 않는지)
+     * 3. 비밀번호 암호화
+     * 4. 사용자 정보 업데이트
+     * 5. 수정된 사용자 정보 반환
+     * 
+     * 보안: JWT 필터에서 이미 인증 검증 완료, 전화번호 중복 검증
+     * 예외: 존재하지 않는 사용자, 중복된 전화번호
+     */
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserInfoResponseDto>> updateMyInfo(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UserUpdateRequestDto requestDto) {
+        log.info("사용자 정보 수정 요청: userId={}", userId);
+        
+        UserInfoResponseDto updatedUserInfo = userService.updateUserInfo(userId, requestDto);
+        
+        log.info("사용자 정보 수정 완료: userId={}", userId);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, updatedUserInfo);
     }
 }
