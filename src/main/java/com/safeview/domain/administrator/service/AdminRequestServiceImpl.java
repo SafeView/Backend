@@ -59,17 +59,6 @@ public class AdminRequestServiceImpl implements AdminRequestService {
         log.info("관리자 권한 요청 생성 시작: userId={}", userId);
         
         try {
-            // 입력 값 검증
-            if (createDto == null) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "요청 정보가 필요합니다.");
-            }
-            if (createDto.getTitle() == null || createDto.getTitle().trim().isEmpty()) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "제목을 입력해주세요.");
-            }
-            if (createDto.getDescription() == null || createDto.getDescription().trim().isEmpty()) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "설명을 입력해주세요.");
-            }
-            
             // 중복 요청 확인 (대기중인 요청이 있는지 확인)
             long pendingCount = adminRequestRepository.countPendingRequestsByUserId(userId);
             if (pendingCount > 0) {

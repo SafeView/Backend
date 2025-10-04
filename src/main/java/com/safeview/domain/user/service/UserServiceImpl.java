@@ -10,6 +10,7 @@ import com.safeview.global.response.ErrorCode;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.security.SecureRandom;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -64,15 +66,13 @@ public class UserServiceImpl implements UserService {
             throw new ApiException(ErrorCode.PHONE_ALREADY_EXISTS);
         }
 
-        // 이메일 인증번호 검증
-        boolean isEmailVerified = emailVerificationStore.verifyCode(requestDto.getEmail(), requestDto.getEmailVerificationCode());
-        if (!isEmailVerified) {
-            throw new ApiException(ErrorCode.BAD_REQUEST, "이메일 인증번호가 올바르지 않거나 만료되었습니다.");
+        // 이메일 인증 완료 여부 확인
+        if (!emailVerificationStore.isEmailVerified(requestDto.getEmail())) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "이메일 인증을 완료해주세요.");
         }
 
         // User 엔티티 생성
         User user = userMapper.toEntity(requestDto);
-
         User savedUser = userRepository.save(user);
 
         return userMapper.toSignUpResponseDto(savedUser);
@@ -93,13 +93,34 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public EmailCheckResponseDto checkEmail(String email) {
-        boolean exists = userRepository.findByEmail(email).isPresent();
+        log.info("이메일 중복 확인: email={}", email);
         
-        if (exists) {
-            throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS, new EmailCheckResponseDto(false));
+        try {
+            // 입력값 검증
+            if (email == null || email.trim().isEmpty()) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "이메일을 입력해주세요.");
+            }
+            if (!email.contains("@") || !email.contains(".")) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "이메일 형식이 아닙니다.");
+            }
+            
+            boolean exists = userRepository.findByEmail(email).isPresent();
+            
+            if (exists) {
+                log.warn("이메일 중복 확인 실패 - 이미 존재: email={}", email);
+                throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS, new EmailCheckResponseDto(false));
+            }
+            
+            log.info("이메일 중복 확인 성공 - 사용 가능: email={}", email);
+            return new EmailCheckResponseDto(true);
+            
+        } catch (ApiException e) {
+            log.error("이메일 중복 확인 실패: email={}, error={}", email, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("이메일 중복 확인 중 예상치 못한 오류: email={}", email, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "이메일 중복 확인 중 오류가 발생했습니다.");
         }
-        
-        return new EmailCheckResponseDto(true);
     }
 
     /**
@@ -117,10 +138,22 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public UserInfoResponseDto getUserInfoById(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        log.info("사용자 정보 조회: userId={}", userId);
         
-        return userMapper.toUserInfoResponseDto(user);
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+            
+            log.info("사용자 정보 조회 성공: userId={}", userId);
+            return userMapper.toUserInfoResponseDto(user);
+            
+        } catch (ApiException e) {
+            log.error("사용자 정보 조회 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("사용자 정보 조회 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "사용자 정보 조회 중 오류가 발생했습니다.");
+        }
     }
 
     /**
@@ -142,31 +175,44 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserInfoResponseDto updateUserInfo(Long userId, UserUpdateRequestDto requestDto) {
-        // 사용자 조회
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        log.info("사용자 정보 수정 시작: userId={}", userId);
+        
+        try {
+            // 사용자 조회
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        // 전화번호 중복 확인 (현재 사용자 제외)
-        if (userRepository.existsByPhoneAndIdNot(requestDto.getPhone(), userId)) {
-            throw new ApiException(ErrorCode.PHONE_ALREADY_EXISTS);
+            // 전화번호 중복 확인 (현재 사용자 제외)
+            if (userRepository.existsByPhoneAndIdNot(requestDto.getPhone(), userId)) {
+                log.warn("사용자 정보 수정 실패 - 전화번호 중복: userId={}, phone={}", userId, requestDto.getPhone());
+                throw new ApiException(ErrorCode.PHONE_ALREADY_EXISTS);
+            }
+
+            // 비밀번호 암호화
+            String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
+
+            // 사용자 정보 업데이트
+            user.updateUserInfo(
+                    encodedPassword,
+                    requestDto.getName(),
+                    requestDto.getAddress(),
+                    requestDto.getPhone(),
+                    requestDto.getGender(),
+                    requestDto.getBirthday()
+            );
+
+            User savedUser = userRepository.save(user);
+
+            log.info("사용자 정보 수정 완료: userId={}", userId);
+            return userMapper.toUserInfoResponseDto(savedUser);
+            
+        } catch (ApiException e) {
+            log.error("사용자 정보 수정 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("사용자 정보 수정 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "사용자 정보 수정 중 오류가 발생했습니다.");
         }
-
-        // 비밀번호 암호화
-        String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
-
-        // 사용자 정보 업데이트
-        user.updateUserInfo(
-                encodedPassword,
-                requestDto.getName(),
-                requestDto.getAddress(),
-                requestDto.getPhone(),
-                requestDto.getGender(),
-                requestDto.getBirthday()
-        );
-
-        User savedUser = userRepository.save(user);
-
-        return userMapper.toUserInfoResponseDto(savedUser);
     }
 
     /**
