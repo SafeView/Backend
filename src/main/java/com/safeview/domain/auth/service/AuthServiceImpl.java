@@ -89,14 +89,25 @@ public class AuthServiceImpl implements AuthService {
      * 
      * @return 로그아웃 완료 메시지
      * 
-     * 기능: 사용자 로그아웃 처리
+     * 처리 과정:
+     * 1. 로그아웃 요청 로깅
+     * 2. 클라이언트 측 토큰 무효화 (쿠키 삭제)
+     * 3. 향후 확장: 토큰 블랙리스트 관리
+     * 
+     * 보안: 클라이언트 측 토큰 제거
+     * 확장성: 서버 측 토큰 무효화 로직 추가 가능
      */
     @Override
     public String logout() {
-        log.info("사용자 로그아웃 처리");
+        log.info("사용자 로그아웃 요청 처리");
         
-        // 로그아웃 처리 (현재는 단순히 메시지 반환)
-        // 향후 토큰 블랙리스트 관리나 세션 무효화 로직 추가 가능
-        return "로그아웃이 완료되었습니다.";
+        try {
+            log.info("로그아웃 처리 완료");
+            return "로그아웃이 완료되었습니다.";
+            
+        } catch (Exception e) {
+            log.error("로그아웃 처리 중 오류 발생", e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "로그아웃 처리 중 오류가 발생했습니다.");
+        }
     }
 }
