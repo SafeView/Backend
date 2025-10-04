@@ -11,4 +11,5 @@ import com.safeview.domain.auth.dto.UserLoginResult;
 public interface AuthService {
     UserLoginResult login(UserLoginRequestDto request);
     String logout();
+    String refreshAccessToken(Long userId);
 }

@@ -12,11 +12,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * - 인증번호 발송 시 저장
  * - 인증번호 검증 시 조회 및 삭제
  * - 5분 후 자동 만료
+ * - 인증 완료된 이메일 관리
  */
 @Component
 public class EmailVerificationStore {
 
     private final Map<String, VerificationData> verificationStore = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> verifiedEmails = new ConcurrentHashMap<>();
 
     /**
      * 인증번호 저장
@@ -50,10 +52,22 @@ public class EmailVerificationStore {
         // 인증번호 일치 확인
         if (data.getCode().equals(code)) {
             verificationStore.remove(email);
+            // 인증 완료 표시
+            verifiedEmails.put(email, true);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * 이메일 인증 완료 여부 확인
+     *
+     * @param email 이메일 주소
+     * @return 인증 완료 여부
+     */
+    public boolean isEmailVerified(String email) {
+        return verifiedEmails.getOrDefault(email, false);
     }
 
     /**

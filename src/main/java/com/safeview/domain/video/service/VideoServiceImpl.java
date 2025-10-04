@@ -73,20 +73,25 @@ public class VideoServiceImpl implements VideoService{
             throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청입니다.");
         }
 
-        for (String url : urls) {
-            String filename = url.substring(url.lastIndexOf("/") + 1);
+        try {
+            for (String url : urls) {
+                String filename = url.substring(url.lastIndexOf("/") + 1);
 
-            Video video = Video.builder()
-                    .userId(userId)
-                    .filename(filename)
-                    .s3Url(url)
-                    .build();
+                Video video = Video.builder()
+                        .userId(userId)
+                        .filename(filename)
+                        .s3Url(url)
+                        .build();
 
-            videoRepository.save(video);
-            log.debug("비디오 엔티티 저장: filename={}, userId={}", filename, userId);
+                videoRepository.save(video);
+                log.debug("비디오 엔티티 저장: filename={}, userId={}", filename, userId);
+            }
+            
+            log.info("비디오 엔티티 생성 완료: userId={}, count={}", userId, urls.size());
+        } catch (Exception e) {
+            log.error("비디오 엔티티 생성 중 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "비디오 엔티티 생성 중 오류가 발생했습니다.");
         }
-        
-        log.info("비디오 엔티티 생성 완료: userId={}, count={}", userId, urls.size());
     }
 
     /**
@@ -106,21 +111,29 @@ public class VideoServiceImpl implements VideoService{
     public RecordingResponseDto startRecording(){
         log.info("영상 녹화 시작 요청");
         
-        String url = aiServerUrl + "/start_recording";
-        RecordingResponseDto response = restTemplate.postForObject(url, null, RecordingResponseDto.class);
-        
-        if(response == null){
-            log.error("AI 서버 응답 없음: 녹화 시작 실패");
-            throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, "녹화 시작 실패");
-        }
+        try {
+            String url = aiServerUrl + "/start_recording";
+            RecordingResponseDto response = restTemplate.postForObject(url, null, RecordingResponseDto.class);
+            
+            if(response == null){
+                log.error("AI 서버 응답 없음: 녹화 시작 실패");
+                throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, "녹화 시작 실패");
+            }
 
-        if(response.getError() == null || !response.getError().equals("no error")){
-            log.error("AI 서버 오류: {}", response.getError());
-            throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, response.getError() == null ? "알 수 없는 오류" : response.getError());
+            if(response.getError() == null || !response.getError().equals("no error")){
+                log.error("AI 서버 오류: {}", response.getError());
+                throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, response.getError() == null ? "알 수 없는 오류" : response.getError());
+            }
+            
+            log.info("영상 녹화 시작 완료");
+            return response;
+        } catch (ApiException e) {
+            log.error("영상 녹화 시작 실패: error={}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("영상 녹화 시작 중 예상치 못한 오류", e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "영상 녹화 시작 중 오류가 발생했습니다.");
         }
-        
-        log.info("영상 녹화 시작 완료");
-        return response;
     }
 
 
@@ -143,28 +156,36 @@ public class VideoServiceImpl implements VideoService{
     public RecordingResponseDto stopRecording(Long userId) {
         log.info("영상 녹화 중지 요청: userId={}", userId);
         
-        String url = aiServerUrl + "/stop_recording";
-        RecordingResponseDto response = restTemplate.postForObject(url, null, RecordingResponseDto.class);
+        try {
+            String url = aiServerUrl + "/stop_recording";
+            RecordingResponseDto response = restTemplate.postForObject(url, null, RecordingResponseDto.class);
 
-        if(response == null){
-            log.error("AI 서버 응답 없음: 녹화 중지 실패");
-            throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, "녹화 중단 및 S3 업로드 실패");
+            if(response == null){
+                log.error("AI 서버 응답 없음: 녹화 중지 실패");
+                throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, "녹화 중단 및 S3 업로드 실패");
+            }
+
+            if(response.getError() == null || !response.getError().equals("no error")){
+                log.error("AI 서버 오류: {}", response.getError());
+                throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, response.getError() == null ? "알 수 없는 오류" : response.getError());
+            }
+
+            Video video = Video.builder()
+                    .userId(userId)
+                    .filename(response.getFilename())
+                    .s3Url(response.getS3Url())
+                    .build();
+
+            videoRepository.save(video);
+            log.info("영상 녹화 중지 완료: userId={}, filename={}", userId, response.getFilename());
+            return response;
+        } catch (ApiException e) {
+            log.error("영상 녹화 중지 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("영상 녹화 중지 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "영상 녹화 중지 중 오류가 발생했습니다.");
         }
-
-        if(response.getError() == null || !response.getError().equals("no error")){
-            log.error("AI 서버 오류: {}", response.getError());
-            throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, response.getError() == null ? "알 수 없는 오류" : response.getError());
-        }
-
-        Video video = Video.builder()
-                .userId(userId)
-                .filename(response.getFilename())
-                .s3Url(response.getS3Url())
-                .build();
-
-        videoRepository.save(video);
-        log.info("영상 녹화 중지 완료: userId={}, filename={}", userId, response.getFilename());
-        return response;
     }
 
     /**
@@ -183,10 +204,15 @@ public class VideoServiceImpl implements VideoService{
     public List<VideoResponseDto> getAllVideosByUserId(Long userId){
         log.info("사용자 영상 목록 조회: userId={}", userId);
         
-        List<Video> list = videoRepository.findAllByUserId(userId);
-        
-        log.info("사용자 영상 목록 조회 완료: userId={}, count={}", userId, list.size());
-        return videoMapper.toVideoResponseDtoList(list);
+        try {
+            List<Video> list = videoRepository.findAllByUserId(userId);
+            
+            log.info("사용자 영상 목록 조회 완료: userId={}, count={}", userId, list.size());
+            return videoMapper.toVideoResponseDtoList(list);
+        } catch (Exception e) {
+            log.error("사용자 영상 목록 조회 중 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "영상 목록 조회 중 오류가 발생했습니다.");
+        }
     }
 
     /**
@@ -205,30 +231,35 @@ public class VideoServiceImpl implements VideoService{
     public List<VideoListResponseDto> getAllVideosGroupedByUser() {
         log.info("관리자용 전체 영상 목록 조회 시작");
         
-        List<Video> videos = videoRepository.findAll();
-        Map<Long, Map<String, List<Video>>> grouped = new HashMap<>();
+        try {
+            List<Video> videos = videoRepository.findAll();
+            Map<Long, Map<String, List<Video>>> grouped = new HashMap<>();
 
-        for (Video video : videos) {
-            Long userId = video.getUserId();
-            String baseName = video.getFilename().replace("_raw", "");
-            grouped
-                    .computeIfAbsent(userId, k -> new HashMap<>())
-                    .computeIfAbsent(baseName, k -> new ArrayList<>())
-                    .add(video);
-        }
-
-        List<VideoListResponseDto> result = new ArrayList<>();
-        for (Map.Entry<Long, Map<String, List<Video>>> userEntry : grouped.entrySet()) {
-            for (Map.Entry<String, List<Video>> fileEntry : userEntry.getValue().entrySet()) {
-                result.add(videoMapper.toVideoListResponseDto(
-                        userEntry.getKey(),
-                        fileEntry.getValue()
-                ));
+            for (Video video : videos) {
+                Long userId = video.getUserId();
+                String baseName = video.getFilename().replace("_raw", "");
+                grouped
+                        .computeIfAbsent(userId, k -> new HashMap<>())
+                        .computeIfAbsent(baseName, k -> new ArrayList<>())
+                        .add(video);
             }
+
+            List<VideoListResponseDto> result = new ArrayList<>();
+            for (Map.Entry<Long, Map<String, List<Video>>> userEntry : grouped.entrySet()) {
+                for (Map.Entry<String, List<Video>> fileEntry : userEntry.getValue().entrySet()) {
+                    result.add(videoMapper.toVideoListResponseDto(
+                            userEntry.getKey(),
+                            fileEntry.getValue()
+                    ));
+                }
+            }
+            
+            log.info("관리자용 전체 영상 목록 조회 완료: userCount={}, totalCount={}", grouped.size(), result.size());
+            return result;
+        } catch (Exception e) {
+            log.error("관리자용 전체 영상 목록 조회 중 오류", e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "영상 목록 조회 중 오류가 발생했습니다.");
         }
-        
-        log.info("관리자용 전체 영상 목록 조회 완료: userCount={}, totalCount={}", grouped.size(), result.size());
-        return result;
     }
 
     /**
@@ -249,26 +280,34 @@ public class VideoServiceImpl implements VideoService{
     public DownloadResponseDto downloadVideo(String filename){
         log.info("영상 다운로드 요청: filename={}", filename);
         
-        if(videoRepository.findByFilename(filename) == null){
-            log.warn("영상을 찾을 수 없음: filename={}", filename);
-            throw new ApiException(VIDEO_NOT_FOUND, "비디오를 찾을 수 없습니다.");
-        }
-        
-        String url = aiServerUrl + "/recordings/" + filename;
-        DownloadResponseDto response = restTemplate.getForObject(url, DownloadResponseDto.class);
+        try {
+            if(videoRepository.findByFilename(filename) == null){
+                log.warn("영상을 찾을 수 없음: filename={}", filename);
+                throw new ApiException(VIDEO_NOT_FOUND, "비디오를 찾을 수 없습니다.");
+            }
+            
+            String url = aiServerUrl + "/recordings/" + filename;
+            DownloadResponseDto response = restTemplate.getForObject(url, DownloadResponseDto.class);
 
-        if(response == null){
-            log.error("AI 서버 응답 없음: 다운로드 실패, filename={}", filename);
-            throw new ApiException(VIDEO_NOT_FOUND, "다운로드 할 수 없습니다.");
-        }
+            if(response == null){
+                log.error("AI 서버 응답 없음: 다운로드 실패, filename={}", filename);
+                throw new ApiException(VIDEO_NOT_FOUND, "다운로드 할 수 없습니다.");
+            }
 
-        if(response.getError() == null || !response.getError().equals("no error")){
-            log.error("AI 서버 오류: filename={}, error={}", filename, response.getError());
-            throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, response.getError() == null ? "알 수 없는 오류" : response.getError());
-        }
+            if(response.getError() == null || !response.getError().equals("no error")){
+                log.error("AI 서버 오류: filename={}, error={}", filename, response.getError());
+                throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, response.getError() == null ? "알 수 없는 오류" : response.getError());
+            }
 
-        log.info("영상 다운로드 완료: filename={}", filename);
-        return response;
+            log.info("영상 다운로드 완료: filename={}", filename);
+            return response;
+        } catch (ApiException e) {
+            log.error("영상 다운로드 실패: filename={}, error={}", filename, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("영상 다운로드 중 예상치 못한 오류: filename={}", filename, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "영상 다운로드 중 오류가 발생했습니다.");
+        }
     }
 
 }

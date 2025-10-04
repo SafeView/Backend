@@ -88,10 +88,11 @@ public class UserController {
     public ApiResponse<EmailCheckResponseDto> checkEmail(@RequestParam String email) {
         log.info("이메일 중복 확인 요청: email={}", email);
         
-        if (email == null || !email.contains("@")) {
-            throw new ApiException(ErrorCode.BAD_REQUEST, "이메일 형식이 유효하지 않습니다.");
+        // 이메일 검증
+        if (email == null || email.trim().isEmpty()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "이메일을 입력해주세요.");
         }
-
+        
         EmailCheckResponseDto response = userService.checkEmail(email);
         
         log.info("이메일 중복 확인 완료: email={}, available={}", email, response.isAvailable());
@@ -115,7 +116,11 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserInfoResponseDto>> getMyInfo(@AuthenticationPrincipal Long userId) {
         log.info("사용자 정보 조회 요청: userId={}", userId);
         
-        // userId 기반으로 사용자 정보 조회
+        // 사용자 ID 검증
+        if (userId == null || userId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+        }
+        
         UserInfoResponseDto userInfo = userService.getUserInfoById(userId);
 
         log.info("사용자 정보 조회 완료: userId={}", userId);
@@ -144,6 +149,11 @@ public class UserController {
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody UserUpdateRequestDto requestDto) {
         log.info("사용자 정보 수정 요청: userId={}", userId);
+        
+        // 사용자 ID 검증
+        if (userId == null || userId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+        }
         
         UserInfoResponseDto updatedUserInfo = userService.updateUserInfo(userId, requestDto);
         

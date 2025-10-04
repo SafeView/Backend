@@ -37,16 +37,21 @@ public class AdminRequestController {
      * @param createDto 권한 요청 생성 정보 (제목, 설명)
      * @return 생성된 권한 요청 정보
      * 
-     * 🔐 보안: @AuthenticationPrincipal로 인증된 사용자만 접근 가능
-     * ✅ 검증: @Valid로 DTO 유효성 검증
+     * 보안: @AuthenticationPrincipal로 인증된 사용자만 접근 가능
+     * 검증: @Valid로 DTO 유효성 검증
      */
     @PostMapping
     public ResponseEntity<ApiResponse<AdminRequestResponseDto>> createAdminRequest(
-            @AuthenticationPrincipal Long userId,  // JWT 토큰에서 자동 추출
+            @AuthenticationPrincipal Long userId,  
             @Valid @RequestBody AdminRequestCreateDto createDto) {
-        
-        AdminRequestResponseDto response = adminRequestService.createAdminRequest(userId, createDto);
-        return ApiResponse.toResponseEntity(SuccessCode.CREATED, response);
+
+            // 사용자 ID 검증
+            if (userId == null || userId <= 0) {
+                throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+            }
+            
+            AdminRequestResponseDto response = adminRequestService.createAdminRequest(userId, createDto);
+            return ApiResponse.toResponseEntity(SuccessCode.CREATED, response);
     }
 
     /**
@@ -61,9 +66,14 @@ public class AdminRequestController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<AdminRequestSummaryDto>>> getMyRequests(
             @AuthenticationPrincipal Long userId) {
-        
-        List<AdminRequestSummaryDto> requests = adminRequestService.getUserRequests(userId);
-        return ApiResponse.toResponseEntity(SuccessCode.OK, requests);
+
+            // 사용자 ID 검증
+            if (userId == null || userId <= 0) {
+                throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+            }
+            
+            List<AdminRequestSummaryDto> requests = adminRequestService.getUserRequests(userId);
+            return ApiResponse.toResponseEntity(SuccessCode.OK, requests);
     }
 
     /**
@@ -80,15 +90,23 @@ public class AdminRequestController {
     public ResponseEntity<ApiResponse<AdminRequestResponseDto>> getMyRequestDetail(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long requestId) {
-        
-        AdminRequestResponseDto request = adminRequestService.getAdminRequest(requestId);
-        
-        // 🔒 보안 검증: 본인의 요청인지 확인
-        if (!request.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.FORBIDDEN, "본인의 요청만 조회할 수 있습니다.");
-        }
-        
-        return ApiResponse.toResponseEntity(SuccessCode.OK, request);
+
+            // 사용자 ID 검증
+            if (userId == null || userId <= 0) {
+                throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+            }
+            if (requestId == null || requestId <= 0) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
+            }
+            
+            AdminRequestResponseDto request = adminRequestService.getAdminRequest(requestId);
+
+            // 본인의 요청인지 확인
+            if (!request.getUserId().equals(userId)) {
+                throw new ApiException(ErrorCode.FORBIDDEN, "본인의 요청만 조회할 수 있습니다.");
+            }
+
+            return ApiResponse.toResponseEntity(SuccessCode.OK, request);
     }
 
     /**
@@ -102,8 +120,14 @@ public class AdminRequestController {
      */
     @GetMapping("/pending/count")
     public ResponseEntity<ApiResponse<Long>> getMyPendingRequestCount(@AuthenticationPrincipal Long userId) {
-        long count = adminRequestService.getPendingRequestCountByUserId(userId);
-        return ApiResponse.toResponseEntity(SuccessCode.OK, count);
+
+            // 사용자 ID 검증
+            if (userId == null || userId <= 0) {
+                throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+            }
+            
+            long count = adminRequestService.getPendingRequestCountByUserId(userId);
+            return ApiResponse.toResponseEntity(SuccessCode.OK, count);
     }
 
 } 

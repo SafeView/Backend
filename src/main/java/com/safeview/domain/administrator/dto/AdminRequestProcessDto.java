@@ -19,7 +19,6 @@ public class AdminRequestProcessDto {
     @NotNull(message = "처리 타입은 필수입니다")
     private ProcessType processType;
 
-    @NotBlank(message = "관리자 코멘트는 필수입니다")
     private String adminComment;
 
     public enum ProcessType {

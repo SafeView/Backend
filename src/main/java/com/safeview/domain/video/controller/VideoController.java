@@ -3,8 +3,11 @@ package com.safeview.domain.video.controller;
 
 import com.safeview.domain.video.dto.*;
 import com.safeview.domain.video.service.VideoService;
+import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
+import com.safeview.global.response.ErrorCode;
 import com.safeview.global.response.SuccessCode;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +53,11 @@ public class VideoController {
     public ResponseEntity<ApiResponse<RecordingResponseDto>> startRecording (@AuthenticationPrincipal Long userId) {
         log.info("영상 녹화 시작 요청: userId={}", userId);
         
+        // 사용자 ID 검증
+        if (userId == null || userId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+        }
+        
         RecordingResponseDto responseDto = videoService.startRecording();
         
         log.info("영상 녹화 시작 완료: userId={}", userId);
@@ -72,6 +80,11 @@ public class VideoController {
     public ResponseEntity<ApiResponse<RecordingResponseDto>> stopRecording (@AuthenticationPrincipal Long userId) {
         log.info("영상 녹화 중지 요청: userId={}", userId);
         
+        // 사용자 ID 검증
+        if (userId == null || userId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+        }
+        
         RecordingResponseDto responseDto = videoService.stopRecording(userId);
         
         log.info("영상 녹화 중지 완료: userId={}", userId);
@@ -91,8 +104,13 @@ public class VideoController {
      * 보안: 인증된 사용자만 접근 가능
      */
     @PostMapping("/make-entity")
-    public ResponseEntity<ApiResponse<String>> makeVideoEntity(@RequestBody MakeVideoEntityRequest request) {
+    public ResponseEntity<ApiResponse<String>> makeVideoEntity(@Valid @RequestBody MakeVideoEntityRequest request) {
         log.info("비디오 엔티티 생성 요청: userId={}, urlCount={}", request.getUserId(), request.getUrls().size());
+        
+        // DTO 검증 (추가 확인)
+        if (request == null) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "요청 정보가 필요합니다.");
+        }
         
         videoService.makeVideoEntity(request.getUrls(), request.getUserId());
         
@@ -115,6 +133,11 @@ public class VideoController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<VideoResponseDto>>> getAllVideos (@AuthenticationPrincipal Long userId) {
         log.info("사용자 영상 목록 조회: userId={}", userId);
+        
+        // 사용자 ID 검증
+        if (userId == null || userId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+        }
         
         List<VideoResponseDto> responseDtoList = videoService.getAllVideosByUserId(userId);
         
@@ -140,6 +163,11 @@ public class VideoController {
     public ResponseEntity<ApiResponse<List<VideoListResponseDto>>> getAllVideosForAdmin(@AuthenticationPrincipal Long userId) {
         log.info("관리자 영상 목록 조회: adminId={}", userId);
         
+        // 관리자 ID 검증
+        if (userId == null || userId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 관리자 정보입니다.");
+        }
+        
         List<VideoListResponseDto> responseDtoList = videoService.getAllVideosGroupedByUser();
         
         log.info("관리자 영상 목록 조회 완료: adminId={}, userCount={}", userId, responseDtoList.size());
@@ -163,6 +191,16 @@ public class VideoController {
     public ResponseEntity<ApiResponse<DownloadResponseDto>> downloadVideo (@AuthenticationPrincipal Long userId,
                                                                            @PathVariable String filename){
         log.info("영상 다운로드 요청: userId={}, filename={}", userId, filename);
+        
+        // 사용자 ID 검증
+        if (userId == null || userId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+        }
+        
+        // 파일명 검증
+        if (filename == null || filename.trim().isEmpty()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "파일명을 입력해주세요.");
+        }
         
         DownloadResponseDto responseDto = videoService.downloadVideo(filename);
         
