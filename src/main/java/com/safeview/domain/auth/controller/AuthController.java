@@ -11,6 +11,7 @@ import com.safeview.global.response.SuccessCode;
 import com.safeview.global.security.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -64,10 +65,6 @@ public class AuthController {
     ) {
         log.info("사용자 로그인 요청: email={}", request.getEmail());
         
-        // DTO 검증 (추가 확인)
-        if (request == null) {
-            throw new ApiException(ErrorCode.BAD_REQUEST, "로그인 정보가 필요합니다.");
-        }
         UserLoginResult result = authService.login(request);
         String accessToken = result.getAccessToken();
         String refreshToken = result.getRefreshToken();

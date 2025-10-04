@@ -77,8 +77,8 @@ public class DecryptionServiceImpl implements DecryptionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
-        if (user.getRole() != Role.ADMIN) {
-            throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
+        if (user.getRole() != Role.MODERATOR && user.getRole() != Role.ADMIN) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "MODERATOR 또는 ADMIN 권한이 필요합니다.");
         }
 
         // 기존 유효한 키가 있는지 확인
@@ -571,7 +571,6 @@ public class DecryptionServiceImpl implements DecryptionService {
                 .orElseThrow(() -> new RuntimeException("토큰을 찾을 수 없습니다."));
     }
 
-    @Transactional
     private void updateKeyStatus(DecryptionKey decryptionKey, String status, String revocationReason) {
         DecryptionKey updatedKey = decryptionKeyMapper.createUpdatedDecryptionKey(decryptionKey, status, revocationReason);
         decryptionKeyRepository.save(updatedKey);
@@ -632,7 +631,6 @@ public class DecryptionServiceImpl implements DecryptionService {
         return isValid;
     }
 
-    @Transactional
     private void saveBlockchainTransaction(String txHash, String txType) {
         BlockchainTransaction transaction = decryptionKeyMapper.createBlockchainTransaction(txHash, txType);
         blockchainTransactionRepository.save(transaction);
