@@ -50,14 +50,25 @@ public class AdminManagementServiceImpl implements AdminManagementService {
      * 용도: 전체 요청 현황 파악
      */
     @Override
-    public List<AdminRequestSummaryForAdminDto> getAllRequests() {
+    public List<AdminRequestSummaryForAdminDto> getAllRequests(Long adminId) {
         try {
+            // 관리자 권한 검증
+            User admin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+
+            if (admin.getRole() != Role.ADMIN) {
+                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
+            }
+
             List<AdminRequest> requests = adminRequestRepository.findAllByOrderByCreatedAtDesc();
             return requests.stream()
                     .map(adminRequestMapper::toSummaryForAdminDto)
                     .toList();
+        } catch (ApiException e) {
+            log.error("전체 권한 요청 목록 조회 실패: adminId={}, error={}", adminId, e.getMessage());
+            throw e;
         } catch (Exception e) {
-            log.error("전체 권한 요청 목록 조회 중 오류 발생", e);
+            log.error("전체 권한 요청 목록 조회 중 오류 발생: adminId={}", adminId, e);
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "전체 요청 목록 조회 중 오류가 발생했습니다.");
         }
     }
@@ -72,17 +83,30 @@ public class AdminManagementServiceImpl implements AdminManagementService {
      * 용도: 승인/거절 통계, 처리 이력 확인
      */
     @Override
-    public List<AdminRequestSummaryForAdminDto> getRequestsByStatus(AdminRequestStatus status) {
+    public List<AdminRequestSummaryForAdminDto> getRequestsByStatus(Long adminId, AdminRequestStatus status) {
         try {
+            // 관리자 권한 검증
+            User admin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+
+            if (admin.getRole() != Role.ADMIN) {
+                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
+            }
+
+            // 상태 값 검증
+            if (status == null) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 상태입니다.");
+            }
+
             List<AdminRequest> requests = adminRequestRepository.findByStatusOrderByCreatedAtDesc(status);
             return requests.stream()
                     .map(adminRequestMapper::toSummaryForAdminDto)
                     .toList();
         } catch (ApiException e) {
-            log.error("상태별 권한 요청 목록 조회 실패: status={}, error={}", status, e.getMessage());
+            log.error("상태별 권한 요청 목록 조회 실패: adminId={}, status={}, error={}", adminId, status, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("상태별 권한 요청 목록 조회 중 예상치 못한 오류: status={}", status, e);
+            log.error("상태별 권한 요청 목록 조회 중 예상치 못한 오류: adminId={}, status={}", adminId, status, e);
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "상태별 요청 목록 조회 중 오류가 발생했습니다.");
         }
     }
@@ -113,7 +137,15 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         log.info("권한 요청 승인 시작: requestId={}, adminId={}", requestId, adminId);
 
         try {
-            // 입력 값 검증
+            // 관리자 권한 검증
+            User admin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+
+            if (admin.getRole() != Role.ADMIN) {
+                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
+            }
+
+            // 사용자 ID 검증
             AdminRequest adminRequest = adminRequestRepository.findById(requestId)
                     .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "유효하지 않은 요청입니다."));
 
@@ -164,7 +196,15 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         log.info("권한 요청 거절 시작: requestId={}, adminId={}", requestId, adminId);
         
         try {
-            // 입력 값 검증
+            // 관리자 권한 검증
+            User admin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+
+            if (admin.getRole() != Role.ADMIN) {
+                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
+            }
+
+            // 사용자 ID 검증
             if (requestId == null || requestId <= 0) {
                 throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
             }
@@ -236,14 +276,25 @@ public class AdminManagementServiceImpl implements AdminManagementService {
      * 용도: 관리자가 우선적으로 처리할 요청 확인
      */
     @Override
-    public List<AdminRequestSummaryForAdminDto> getPendingRequests() {
+    public List<AdminRequestSummaryForAdminDto> getPendingRequests(Long adminId) {
         try {
+            // 관리자 권한 검증
+            User admin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+
+            if (admin.getRole() != Role.ADMIN) {
+                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
+            }
+
             List<AdminRequest> requests = adminRequestRepository.findByStatusOrderByCreatedAtDesc(AdminRequestStatus.PENDING);
             return requests.stream()
                     .map(adminRequestMapper::toSummaryForAdminDto)
                     .toList();
+        } catch (ApiException e) {
+            log.error("대기중인 권한 요청 목록 조회 실패: adminId={}, error={}", adminId, e.getMessage());
+            throw e;
         } catch (Exception e) {
-            log.error("대기중인 권한 요청 목록 조회 중 오류 발생", e);
+            log.error("대기중인 권한 요청 목록 조회 중 오류 발생: adminId={}", adminId, e);
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "대기중인 요청 목록 조회 중 오류가 발생했습니다.");
         }
     }
@@ -259,17 +310,30 @@ public class AdminManagementServiceImpl implements AdminManagementService {
      * 예외: 존재하지 않는 요청
      */
     @Override
-    public AdminRequestResponseDto getRequestDetail(Long requestId) {
+    public AdminRequestResponseDto getRequestDetail(Long adminId, Long requestId) {
         try {
+            // 관리자 권한 검증
+            User admin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+
+            if (admin.getRole() != Role.ADMIN) {
+                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
+            }
+
+            // 요청 ID 검증
+            if (requestId == null || requestId <= 0) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
+            }
+
             AdminRequest adminRequest = adminRequestRepository.findById(requestId)
                     .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "유효하지 않은 요청입니다."));
             
             return adminRequestMapper.toResponseDto(adminRequest);
         } catch (ApiException e) {
-            log.error("권한 요청 상세 조회 실패: requestId={}, error={}", requestId, e.getMessage());
+            log.error("권한 요청 상세 조회 실패: adminId={}, requestId={}, error={}", adminId, requestId, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("권한 요청 상세 조회 중 예상치 못한 오류: requestId={}", requestId, e);
+            log.error("권한 요청 상세 조회 중 예상치 못한 오류: adminId={}, requestId={}", adminId, requestId, e);
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "요청 상세 조회 중 오류가 발생했습니다.");
         }
     }

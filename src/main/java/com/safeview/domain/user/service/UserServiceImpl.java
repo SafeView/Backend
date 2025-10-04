@@ -96,7 +96,7 @@ public class UserServiceImpl implements UserService {
         log.info("이메일 중복 확인: email={}", email);
         
         try {
-            // 입력값 검증
+            // 이메일 검증
             if (email == null || email.trim().isEmpty()) {
                 throw new ApiException(ErrorCode.BAD_REQUEST, "이메일을 입력해주세요.");
             }

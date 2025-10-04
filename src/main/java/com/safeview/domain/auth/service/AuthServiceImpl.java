@@ -110,4 +110,41 @@ public class AuthServiceImpl implements AuthService {
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "로그아웃 처리 중 오류가 발생했습니다.");
         }
     }
+
+    /**
+     * Access Token 재발급
+     * 
+     * @param userId 사용자 ID
+     * @return 새로운 Access Token
+     * 
+     * 처리 과정:
+     * 1. 사용자 조회 및 역할 확인
+     * 2. 새로운 Access Token 생성
+     * 
+     * 보안: 사용자 존재 여부 및 역할 확인
+     * 예외: 존재하지 않는 사용자
+     */
+    @Override
+    public String refreshAccessToken(Long userId) {
+        log.info("Access Token 재발급 요청: userId={}", userId);
+        
+        try {
+            // 사용자 조회 (역할 확인용)
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+            // 새로운 Access Token 생성
+            String newAccessToken = jwtTokenProvider.generateAccessToken(userId, user.getRole());
+            
+            log.info("Access Token 재발급 완료: userId={}, role={}", userId, user.getRole());
+            return newAccessToken;
+            
+        } catch (ApiException e) {
+            log.error("Access Token 재발급 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Access Token 재발급 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "Access Token 재발급 중 오류가 발생했습니다.");
+        }
+    }
 }

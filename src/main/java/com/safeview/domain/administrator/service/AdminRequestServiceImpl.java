@@ -126,7 +126,7 @@ public class AdminRequestServiceImpl implements AdminRequestService {
         log.info("권한 요청 상세 조회: requestId={}", requestId);
         
         try {
-            // 입력 값 검증
+            // 요청 ID 검증
             if (requestId == null || requestId <= 0) {
                 throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
             }

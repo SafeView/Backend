@@ -5,15 +5,13 @@ import com.safeview.domain.administrator.dto.AdminRequestResponseDto;
 import com.safeview.domain.administrator.dto.AdminRequestSummaryForAdminDto;
 import com.safeview.domain.administrator.entity.AdminRequestStatus;
 import com.safeview.domain.administrator.service.AdminManagementService;
-import com.safeview.domain.user.entity.Role;
-import com.safeview.domain.user.entity.User;
-import com.safeview.domain.user.repository.UserRepository;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
 import com.safeview.global.response.ErrorCode;
 import com.safeview.global.response.SuccessCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -30,13 +28,13 @@ import java.util.List;
  * 
  * 보안: ADMIN 권한만 접근 가능
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/admin/requests")
 @RequiredArgsConstructor // ADMIN 권한만 접근 가능
 public class AdminManagementController {
 
     private final AdminManagementService adminManagementService;
-    private final UserRepository userRepository;
 
 
     /**
@@ -51,19 +49,16 @@ public class AdminManagementController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<AdminRequestSummaryForAdminDto>>> getAllRequests(
             @AuthenticationPrincipal Long adminId) {
+        log.info("전체 권한 요청 목록 조회 요청: adminId={}", adminId);
 
-            // 관리자 권한 검증
-            User admin = userRepository.findById(adminId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+        // 관리자 ID 검증
+        if (adminId == null || adminId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 관리자 정보입니다.");
+        }
 
-            // 관리자가 아닐 시
-            if (admin.getRole() != Role.ADMIN) {
-                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
-            }
-
-            // 비즈니스 로직 호출
-            List<AdminRequestSummaryForAdminDto> requests = adminManagementService.getAllRequests();
-            return ApiResponse.toResponseEntity(SuccessCode.OK, requests);
+        // 비즈니스 로직 호출 (권한 검증 포함)
+        List<AdminRequestSummaryForAdminDto> requests = adminManagementService.getAllRequests(adminId);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, requests);
     }
 
     /**
@@ -78,18 +73,16 @@ public class AdminManagementController {
     @GetMapping("/pending")
     public ResponseEntity<ApiResponse<List<AdminRequestSummaryForAdminDto>>> getPendingRequests(
             @AuthenticationPrincipal Long adminId) {
-            // 관리자 권한 검증
-            User admin = userRepository.findById(adminId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+        log.info("대기중인 권한 요청 목록 조회 요청: adminId={}", adminId);
 
-            // 관리자가 아닐 시
-            if (admin.getRole() != Role.ADMIN) {
-                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
-            }
+        // 관리자 ID 검증
+        if (adminId == null || adminId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 관리자 정보입니다.");
+        }
 
-            // 비즈니스 로직 호출
-            List<AdminRequestSummaryForAdminDto> requests = adminManagementService.getPendingRequests();
-            return ApiResponse.toResponseEntity(SuccessCode.OK, requests);
+        // 비즈니스 로직 호출 (권한 검증 포함)
+        List<AdminRequestSummaryForAdminDto> requests = adminManagementService.getPendingRequests(adminId);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, requests);
     }
 
     /**
@@ -106,24 +99,21 @@ public class AdminManagementController {
     public ResponseEntity<ApiResponse<List<AdminRequestSummaryForAdminDto>>> getRequestsByStatus(
             @AuthenticationPrincipal Long adminId,
             @PathVariable AdminRequestStatus status) {
+        log.info("상태별 권한 요청 목록 조회 요청: adminId={}, status={}", adminId, status);
 
-            // 관리자 권한 검증
-            User admin = userRepository.findById(adminId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+        // 관리자 ID 검증
+        if (adminId == null || adminId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 관리자 정보입니다.");
+        }
 
-            // 관리자가 아닐 시
-            if (admin.getRole() != Role.ADMIN) {
-                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
-            }
-            
-            // 상태 값 검증
-            if (status == null) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 상태입니다.");
-            }
+        // 상태 검증
+        if (status == null) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 상태입니다.");
+        }
 
-            // 비즈니스 로직 호출
-            List<AdminRequestSummaryForAdminDto> requests = adminManagementService.getRequestsByStatus(status);
-            return ApiResponse.toResponseEntity(SuccessCode.OK, requests);
+        // 비즈니스 로직 호출 (권한 검증 포함)
+        List<AdminRequestSummaryForAdminDto> requests = adminManagementService.getRequestsByStatus(adminId, status);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, requests);
     }
 
     /**
@@ -140,24 +130,21 @@ public class AdminManagementController {
     public ResponseEntity<ApiResponse<AdminRequestResponseDto>> getRequestDetail(
             @AuthenticationPrincipal Long adminId,
             @PathVariable Long requestId) {
+        log.info("권한 요청 상세 조회 요청: adminId={}, requestId={}", adminId, requestId);
 
-            // 관리자 권한 검증
-            User admin = userRepository.findById(adminId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+        // 관리자 ID 검증
+        if (adminId == null || adminId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 관리자 정보입니다.");
+        }
 
-            // 관리자가 아닐 시
-            if (admin.getRole() != Role.ADMIN) {
-                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
-            }
-            
-            // 요청 ID 검증
-            if (requestId == null || requestId <= 0) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
-            }
+        // 요청 ID 검증
+        if (requestId == null || requestId <= 0) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
+        }
 
-            // 비즈니스 로직 호출
-            AdminRequestResponseDto request = adminManagementService.getRequestDetail(requestId);
-            return ApiResponse.toResponseEntity(SuccessCode.OK, request);
+        // 비즈니스 로직 호출 (권한 검증 포함)
+        AdminRequestResponseDto request = adminManagementService.getRequestDetail(adminId, requestId);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, request);
     }
 
     /**
@@ -178,22 +165,20 @@ public class AdminManagementController {
             @PathVariable Long requestId,
             @AuthenticationPrincipal Long adminId,  // 승인하는 관리자 ID
             @Valid @RequestBody AdminCommentDto adminCommentDto) {
+        log.info("권한 요청 승인 요청: adminId={}, requestId={}", adminId, requestId);
 
-            // 입력 값 검증
-            if (requestId == null || requestId <= 0) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
-            }
-            
-            // 관리자 권한 검증
-            User admin = userRepository.findById(adminId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
-            
-            if (admin.getRole() != Role.ADMIN) {
-                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
-            }
-            
-            AdminRequestResponseDto response = adminManagementService.approveRequest(requestId, adminId, adminCommentDto.getAdminComment());
-            return ApiResponse.toResponseEntity(SuccessCode.OK, response);
+        // 관리자 ID 검증
+        if (adminId == null || adminId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 관리자 정보입니다.");
+        }
+
+        // 요청 ID 검증
+        if (requestId == null || requestId <= 0) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
+        }
+
+        AdminRequestResponseDto response = adminManagementService.approveRequest(requestId, adminId, adminCommentDto.getAdminComment());
+        return ApiResponse.toResponseEntity(SuccessCode.OK, response);
     }
 
     /**
@@ -214,21 +199,19 @@ public class AdminManagementController {
             @PathVariable Long requestId,
             @AuthenticationPrincipal Long adminId,  // 거절하는 관리자 ID
             @Valid @RequestBody AdminCommentDto adminCommentDto) {
+        log.info("권한 요청 거절 요청: adminId={}, requestId={}", adminId, requestId);
 
-            // 입력 값 검증
-            if (requestId == null || requestId <= 0) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
-            }
-            
-            // 관리자 권한 검증
-            User admin = userRepository.findById(adminId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
-            
-            if (admin.getRole() != Role.ADMIN) {
-                throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
-            }
-            
-            AdminRequestResponseDto response = adminManagementService.rejectRequest(requestId, adminId, adminCommentDto.getAdminComment());
-            return ApiResponse.toResponseEntity(SuccessCode.OK, response);
+        // 관리자 ID 검증
+        if (adminId == null || adminId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 관리자 정보입니다.");
+        }
+
+        // 요청 ID 검증
+        if (requestId == null || requestId <= 0) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
+        }
+
+        AdminRequestResponseDto response = adminManagementService.rejectRequest(requestId, adminId, adminCommentDto.getAdminComment());
+        return ApiResponse.toResponseEntity(SuccessCode.OK, response);
     }
 }

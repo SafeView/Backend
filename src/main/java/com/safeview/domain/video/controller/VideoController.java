@@ -104,8 +104,13 @@ public class VideoController {
      * 보안: 인증된 사용자만 접근 가능
      */
     @PostMapping("/make-entity")
-    public ResponseEntity<ApiResponse<String>> makeVideoEntity(@RequestBody MakeVideoEntityRequest request) {
+    public ResponseEntity<ApiResponse<String>> makeVideoEntity(@Valid @RequestBody MakeVideoEntityRequest request) {
         log.info("비디오 엔티티 생성 요청: userId={}, urlCount={}", request.getUserId(), request.getUrls().size());
+        
+        // DTO 검증 (추가 확인)
+        if (request == null) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "요청 정보가 필요합니다.");
+        }
         
         videoService.makeVideoEntity(request.getUrls(), request.getUserId());
         

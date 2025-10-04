@@ -4,8 +4,6 @@ import com.safeview.domain.auth.dto.UserLoginRequestDto;
 import com.safeview.domain.auth.dto.UserLoginResponseDto;
 import com.safeview.domain.auth.dto.UserLoginResult;
 import com.safeview.domain.auth.service.AuthService;
-import com.safeview.domain.user.entity.User;
-import com.safeview.domain.user.repository.UserRepository;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
 import com.safeview.global.response.ErrorCode;
@@ -39,7 +37,6 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository userRepository;
 
     /**
      * 사용자 로그인
@@ -62,9 +59,15 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserLoginResponseDto>> login(
-            @RequestBody UserLoginRequestDto request,
+            @Valid @RequestBody UserLoginRequestDto request,
             HttpServletResponse response
     ) {
+        log.info("사용자 로그인 요청: email={}", request.getEmail());
+        
+        // DTO 검증 (추가 확인)
+        if (request == null) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "로그인 정보가 필요합니다.");
+        }
         UserLoginResult result = authService.login(request);
         String accessToken = result.getAccessToken();
         String refreshToken = result.getRefreshToken();
@@ -110,6 +113,8 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+        log.info("사용자 로그아웃 요청");
+        
         // 서비스에서 로그아웃 처리
         String logoutMessage = authService.logout();
         
@@ -160,6 +165,8 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
+        log.info("Access Token 재발급 요청");
+        
         // Refresh Token 추출
         String refreshToken = jwtTokenProvider.resolveRefreshTokenFromCookie(request);
 
@@ -181,12 +188,8 @@ public class AuthController {
         // Refresh Token에서 사용자 ID 추출
         Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
 
-        // 사용자 조회 (역할 확인용)
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
-
-        // 새로운 Access Token 생성
-        String newAccessToken = jwtTokenProvider.generateAccessToken(userId, user.getRole());
+        // 새로운 Access Token 생성 (사용자 정보 조회)
+        String newAccessToken = authService.refreshAccessToken(userId);
 
         // 새로운 Access Token 쿠키 생성
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", newAccessToken)

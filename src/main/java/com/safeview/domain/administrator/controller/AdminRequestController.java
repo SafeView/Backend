@@ -45,7 +45,7 @@ public class AdminRequestController {
             @AuthenticationPrincipal Long userId,  
             @Valid @RequestBody AdminRequestCreateDto createDto) {
 
-            // 입력 값 검증
+            // 사용자 ID 검증
             if (userId == null || userId <= 0) {
                 throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
             }
@@ -67,7 +67,7 @@ public class AdminRequestController {
     public ResponseEntity<ApiResponse<List<AdminRequestSummaryDto>>> getMyRequests(
             @AuthenticationPrincipal Long userId) {
 
-            // 입력 값 검증
+            // 사용자 ID 검증
             if (userId == null || userId <= 0) {
                 throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
             }
@@ -91,7 +91,7 @@ public class AdminRequestController {
             @AuthenticationPrincipal Long userId,
             @PathVariable Long requestId) {
 
-            // 입력 값 검증
+            // 사용자 ID 검증
             if (userId == null || userId <= 0) {
                 throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
             }
@@ -121,7 +121,7 @@ public class AdminRequestController {
     @GetMapping("/pending/count")
     public ResponseEntity<ApiResponse<Long>> getMyPendingRequestCount(@AuthenticationPrincipal Long userId) {
 
-            // 입력 값 검증
+            // 사용자 ID 검증
             if (userId == null || userId <= 0) {
                 throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
             }

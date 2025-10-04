@@ -88,6 +88,11 @@ public class UserController {
     public ApiResponse<EmailCheckResponseDto> checkEmail(@RequestParam String email) {
         log.info("이메일 중복 확인 요청: email={}", email);
         
+        // 이메일 검증
+        if (email == null || email.trim().isEmpty()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "이메일을 입력해주세요.");
+        }
+        
         EmailCheckResponseDto response = userService.checkEmail(email);
         
         log.info("이메일 중복 확인 완료: email={}, available={}", email, response.isAvailable());
