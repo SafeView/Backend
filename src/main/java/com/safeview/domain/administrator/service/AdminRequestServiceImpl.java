@@ -64,10 +64,10 @@ public class AdminRequestServiceImpl implements AdminRequestService {
                 throw new ApiException(ErrorCode.BAD_REQUEST, "요청 정보가 필요합니다.");
             }
             if (createDto.getTitle() == null || createDto.getTitle().trim().isEmpty()) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "제목은 필수입니다.");
+                throw new ApiException(ErrorCode.BAD_REQUEST, "제목을 입력해주세요.");
             }
-            if (createDto.getDescription() == null) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "설명은 필수입니다.");
+            if (createDto.getDescription() == null || createDto.getDescription().trim().isEmpty()) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "설명을 입력해주세요.");
             }
             
             // 중복 요청 확인 (대기중인 요청이 있는지 확인)
@@ -107,11 +107,6 @@ public class AdminRequestServiceImpl implements AdminRequestService {
         log.info("사용자 권한 요청 목록 조회: userId={}", userId);
         
         try {
-            // 입력 값 검증
-            if (userId == null || userId <= 0) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 사용자 ID입니다.");
-            }
-            
             List<AdminRequest> requests = adminRequestRepository.findByUserIdOrderByCreatedAtDesc(userId);
             return requests.stream()
                     .map(adminRequestMapper::toSummaryDto)
@@ -176,11 +171,6 @@ public class AdminRequestServiceImpl implements AdminRequestService {
         log.info("사용자 대기중인 요청 개수 조회: userId={}", userId);
         
         try {
-            // 입력 값 검증
-            if (userId == null || userId <= 0) {
-                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 사용자 ID입니다.");
-            }
-            
             return adminRequestRepository.countPendingRequestsByUserId(userId);
         } catch (ApiException e) {
             log.error("사용자 대기중인 요청 개수 조회 실패: userId={}, error={}", userId, e.getMessage());

@@ -177,7 +177,7 @@ public class AdminManagementController {
     public ResponseEntity<ApiResponse<AdminRequestResponseDto>> approveRequest(
             @PathVariable Long requestId,
             @AuthenticationPrincipal Long adminId,  // 승인하는 관리자 ID
-            @RequestBody AdminCommentDto adminCommentDto) {
+            @Valid @RequestBody AdminCommentDto adminCommentDto) {
 
             // 입력 값 검증
             if (requestId == null || requestId <= 0) {
@@ -213,7 +213,7 @@ public class AdminManagementController {
     public ResponseEntity<ApiResponse<AdminRequestResponseDto>> rejectRequest(
             @PathVariable Long requestId,
             @AuthenticationPrincipal Long adminId,  // 거절하는 관리자 ID
-            @RequestBody AdminCommentDto adminCommentDto) {
+            @Valid @RequestBody AdminCommentDto adminCommentDto) {
 
             // 입력 값 검증
             if (requestId == null || requestId <= 0) {

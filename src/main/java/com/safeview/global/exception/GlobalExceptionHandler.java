@@ -97,6 +97,21 @@ public class GlobalExceptionHandler {
     }
 
     /*
+     * 일반 예외 처리
+     * 
+     * 예상치 못한 모든 예외를 처리하는 최종 핸들러
+     * 로깅 후 일관된 에러 응답 반환
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleException(Exception e) {
+        // 로깅 (실제 운영에서는 로그 레벨에 따라 조정)
+        System.err.println("예상치 못한 예외 발생: " + e.getMessage());
+        e.printStackTrace();
+        
+        return handleExceptionInternal(ErrorCode.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
+    }
+
+    /*
      * 내부 예외 처리 메서드
      * 
      * ErrorCode와 데이터를 받아서 일관된 형태의 응답 생성
