@@ -1,4 +1,6 @@
 # SafeView Backend
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSafeView%2FBackend.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FSafeView%2FBackend?ref=badge_shield)
+
 
 CCTV 영상 관리 및 복호화 시스템의 백엔드 애플리케이션입니다.
 
@@ -303,3 +305,7 @@ api:
 ---
 
 **SafeView Backend** - 안전한 CCTV 영상 관리 시스템
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSafeView%2FBackend.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FSafeView%2FBackend?ref=badge_large)
