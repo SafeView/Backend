@@ -48,19 +48,16 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         // 인증 없이 허용할 API 경로
-                        .requestMatchers("/api/auth/**").permitAll() // ex: /api/auth/login, signup 등
-                        .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/users/signup").permitAll()
+                        .requestMatchers("/api/users/check-email").permitAll()
+                        .requestMatchers("/api/users/temp-password").permitAll()
+                        .requestMatchers("/api/users/email-verification/send").permitAll()
+                        .requestMatchers("/api/users/email-verification/verify").permitAll()
 
                         // AI 서버 키 검증 엔드포인트 허용
                         .requestMatchers("/api/decryption/keys/verify/ai").permitAll()
                         .requestMatchers("/api/videos/make-entity").permitAll()
-
-                        // 관리자 API는 인증만 필요
-                        .requestMatchers("/api/admin/**").authenticated()
-
-                        // decryption API는 인증 필수
-                        .requestMatchers("/api/decryption/**").authenticated()
-                        .requestMatchers("/api/videos/**").authenticated()
 
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
