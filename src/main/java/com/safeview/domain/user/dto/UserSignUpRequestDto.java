@@ -41,3 +41,4 @@ public class UserSignUpRequestDto {
     @NotBlank(message = "생년월일은 필수 항목입니다.")
     private String birthday;
 }
+
