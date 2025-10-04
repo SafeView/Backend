@@ -40,7 +40,7 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable()) // CSRF 비활성화 (JWT는 상태를 저장하지 않음)
 
-                .cors(cors -> {}) // ✅ WebConfig의 CORS 설정을 SecurityFilterChain에 반영
+                .cors(cors -> {}) // WebConfig의 CORS 설정을 SecurityFilterChain에 반영
 
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 세션 사용 안함
@@ -55,8 +55,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/decryption/keys/verify/ai").permitAll()
                         .requestMatchers("/api/videos/make-entity").permitAll()
 
-                        // 관리자 API는 ADMIN 권한 필요
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // 관리자 API는 인증만 필요
+                        .requestMatchers("/api/admin/**").authenticated()
 
                         // decryption API는 인증 필수
                         .requestMatchers("/api/decryption/**").authenticated()
