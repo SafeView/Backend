@@ -48,7 +48,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         // 인증 없이 허용할 API 경로
-                        .requestMatchers("/api/auth/**").permitAll() // ex: /api/auth/login, signup 등
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/signup").permitAll()
                         .requestMatchers("/api/users/check-email").permitAll()
                         .requestMatchers("/api/users/temp-password").permitAll()
