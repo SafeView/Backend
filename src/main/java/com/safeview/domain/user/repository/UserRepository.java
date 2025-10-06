@@ -1,5 +1,6 @@
 package com.safeview.domain.user.repository;
 
+import com.safeview.domain.user.entity.Role;
 import com.safeview.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -9,4 +10,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByPhone(String phone);
     boolean existsByPhoneAndIdNot(String phone, Long id);
+    
+    /**
+     * 특정 역할의 사용자 수 조회
+     */
+    long countByRole(Role role);
 }

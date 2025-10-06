@@ -2,6 +2,8 @@ package com.safeview.domain.video.controller;
 
 
 import com.safeview.domain.video.dto.*;
+import com.safeview.domain.video.mapper.PageMapper;
+import com.safeview.domain.video.service.VideoDownloadLogService;
 import com.safeview.domain.video.service.VideoService;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
@@ -10,6 +12,10 @@ import com.safeview.global.response.SuccessCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,6 +42,7 @@ import java.util.List;
 public class VideoController {
 
     private final VideoService videoService;
+    private final VideoDownloadLogService videoDownloadLogService;
 
     /**
      * 영상 녹화 시작
@@ -204,7 +211,44 @@ public class VideoController {
         
         DownloadResponseDto responseDto = videoService.downloadVideo(filename);
         
+        // 다운로드 로그 기록
+        videoDownloadLogService.logDownload(userId, "사용자" + userId); 
+        
         log.info("영상 다운로드 완료: userId={}, filename={}", userId, filename);
         return ApiResponse.toResponseEntity(SuccessCode.OK, responseDto);
     }
+    
+    /**
+     * 관리자용 다운로드 로그 조회 (페이지네이션)
+     * 
+     * @param adminUserId 인증된 관리자 ID
+     * @param pageable 페이징 정보 (page, size, sort)
+     * @return 다운로드 로그 목록 (페이지네이션)
+     * 
+     * 권한: ADMIN만 접근 가능
+     * 기능: 모든 다운로드 로그를 최신순으로 조회
+     * 
+     * 사용 예시:
+     * GET /api/videos/download-logs?page=0&size=10&sort=createdAt,desc
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/download-logs")
+    public ResponseEntity<ApiResponse<PageResponseDto<VideoDownloadLogResponseDto>>> getDownloadLogs(
+            @AuthenticationPrincipal Long adminUserId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        
+        log.info("관리자 다운로드 로그 조회: adminUserId={}, page={}, size={}", adminUserId, pageable.getPageNumber(), pageable.getPageSize());
+        
+        // 관리자 ID 검증
+        if (adminUserId == null || adminUserId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 관리자 정보입니다.");
+        }
+        
+        Page<VideoDownloadLogResponseDto> downloadLogs = videoDownloadLogService.getDownloadLogsForAdmin(adminUserId, pageable);
+        PageResponseDto<VideoDownloadLogResponseDto> response = PageMapper.toPageResponse(downloadLogs);
+        
+        log.info("관리자 다운로드 로그 조회 완료: adminUserId={}, totalElements={}", adminUserId, downloadLogs.getTotalElements());
+        return ApiResponse.toResponseEntity(SuccessCode.OK, response);
+    }
+    
 }

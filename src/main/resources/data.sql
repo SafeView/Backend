@@ -40,4 +40,13 @@ VALUES (
 -- WHERE EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.user_id);
 
 -- 마이그레이션 완료 후 user_roles 테이블 삭제
--- DROP TABLE IF EXISTS user_roles; 
+-- DROP TABLE IF EXISTS user_roles;
+
+-- 다운로드 로그 테스트 데이터
+INSERT INTO video_download_logs (user_id, user_name, user_email, user_phone, user_address, user_gender, user_birthday, user_role, created_at, updated_at)
+VALUES 
+    (1, '관리자', 'admin@safeview.com', '010-1234-5678', '서울시 강남구 테헤란로 123', 'MALE', '1990-01-01', 'ADMIN', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY),
+    (1, '관리자', 'admin@safeview.com', '010-1234-5678', '서울시 강남구 테헤란로 123', 'MALE', '1990-01-01', 'ADMIN', NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 2 HOUR),
+    (1, '관리자', 'admin@safeview.com', '010-1234-5678', '서울시 강남구 테헤란로 123', 'MALE', '1990-01-01', 'ADMIN', NOW() - INTERVAL 30 MINUTE, NOW() - INTERVAL 30 MINUTE),
+    (1, '관리자', 'admin@safeview.com', '010-1234-5678', '서울시 강남구 테헤란로 123', 'MALE', '1990-01-01', 'ADMIN', NOW() - INTERVAL 10 MINUTE, NOW() - INTERVAL 10 MINUTE),
+    (1, '관리자', 'admin@safeview.com', '010-1234-5678', '서울시 강남구 테헤란로 123', 'MALE', '1990-01-01', 'ADMIN', NOW() - INTERVAL 5 MINUTE, NOW() - INTERVAL 5 MINUTE); 
