@@ -47,16 +47,11 @@ public class VideoDownloadLogServiceImpl implements VideoDownloadLogService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "사용자 정보를 찾을 수 없습니다."));
         
-        if (user.getRole() != Role.ADMIN) {
-            throw new ApiException(ErrorCode.FORBIDDEN, "관리자 권한이 필요합니다.");
-        }
-        
         // 매퍼를 통해 사용자 전체 정보로 다운로드 로그 생성 및 저장
         VideoDownloadLog downloadLog = videoDownloadLogMapper.createDownloadLog(user);
         VideoDownloadLog savedLog = videoDownloadLogRepository.save(downloadLog);
         
-        log.info("다운로드 로그 기록 완료: logId={}, userEmail={}, userRole={}", 
-                savedLog.getId(), user.getEmail(), user.getRole());
+        log.info("다운로드 로그 기록 완료: logId={}, userEmail={}, userRole={}", savedLog.getId(), user.getEmail(), user.getRole());
         return savedLog;
     }
     
