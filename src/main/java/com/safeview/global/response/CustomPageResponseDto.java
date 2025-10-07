@@ -1,4 +1,4 @@
-package com.safeview.domain.video.dto;
+package com.safeview.global.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,23 +8,18 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * 페이지네이션 응답 DTO
+ * 커스텀 페이지네이션 응답 DTO
  * 
- * 복잡한 Spring Page 객체를 간단한 형태로 변환
+ * Spring의 기본 Page 객체 대신 간단하고 명확한 페이지네이션 정보를 제공
  */
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PageResponseDto<T> {
+public class CustomPageResponseDto<T> {
     
     /**
-     * 데이터 목록
-     */
-    private List<T> content;
-    
-    /**
-     * 현재 페이지 번호 (0부터 시작)
+     * 현재 페이지 (0부터 시작)
      */
     private int page;
     
@@ -34,12 +29,12 @@ public class PageResponseDto<T> {
     private int size;
     
     /**
-     * 전체 데이터 개수
+     * 총 요소 수
      */
     private long totalElements;
     
     /**
-     * 전체 페이지 수
+     * 총 페이지 수
      */
     private int totalPages;
     
@@ -53,4 +48,8 @@ public class PageResponseDto<T> {
      */
     private boolean last;
     
+    /**
+     * 데이터 목록
+     */
+    private List<T> content;
 }

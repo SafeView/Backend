@@ -211,4 +211,5 @@ public class UserController {
         log.info("이메일 인증번호 검증 완료: email={}", requestDto.getEmail());
         return ApiResponse.toResponseEntity(SuccessCode.OK, response);
     }
+    
 }

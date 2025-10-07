@@ -1,17 +1,26 @@
 package com.safeview.domain.dashboard.controller;
 
 import com.safeview.domain.dashboard.dto.KeyStatsDto;
+import com.safeview.domain.dashboard.dto.UserListResponseDto;
 import com.safeview.domain.dashboard.dto.UserStatsDto;
 import com.safeview.domain.dashboard.dto.YearlyKeyIssuanceDto;
 import com.safeview.domain.dashboard.dto.YearlyNewUsersDto;
 import com.safeview.domain.dashboard.service.DashboardService;
+import com.safeview.domain.user.entity.Role;
+import com.safeview.global.mapper.PageMapper;
 import com.safeview.global.response.ApiResponse;
+import com.safeview.global.response.CustomPageResponseDto;
 import com.safeview.global.response.SuccessCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -93,5 +102,32 @@ public class DashboardController {
             @AuthenticationPrincipal Long adminUserId) {
         YearlyKeyIssuanceDto yearlyKeyIssuance = dashboardService.getYearlyKeyIssuance(adminUserId);
         return ApiResponse.toResponseEntity(SuccessCode.OK, yearlyKeyIssuance);
+    }
+    
+    /**
+     * 회원 목록 조회 (관리자용)
+     * 
+     * @param adminUserId 인증된 관리자 ID
+     * @param role 사용자 역할 (선택적, null이면 모든 역할)
+     * @param pageable 페이징 정보 (page, size, sort)
+     * @return 회원 목록 (페이지네이션)
+     * 
+     * 권한: ADMIN만 접근 가능
+     * 기능: 관리자가 모든 회원 또는 특정 역할의 회원 목록을 조회
+     * 
+     * 사용 예시:
+     * GET /api/dashboard/users?role=USER&page=0&size=10&sort=createdAt,desc
+     * GET /api/dashboard/users?page=0&size=20&sort=name,asc
+     */
+    @GetMapping("/users")
+    public ResponseEntity<ApiResponse<CustomPageResponseDto<UserListResponseDto>>> getUsers(
+            @AuthenticationPrincipal Long adminUserId,
+            @RequestParam(required = false) Role role,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        
+        Page<UserListResponseDto> users = dashboardService.getUsers(adminUserId, role, pageable);
+        CustomPageResponseDto<UserListResponseDto> customPage = PageMapper.toCustomPageResponse(users);
+        
+        return ApiResponse.toResponseEntity(SuccessCode.OK, customPage);
     }
 }

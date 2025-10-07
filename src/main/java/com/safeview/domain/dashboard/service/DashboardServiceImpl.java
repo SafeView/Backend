@@ -1,6 +1,7 @@
 package com.safeview.domain.dashboard.service;
 
 import com.safeview.domain.dashboard.dto.KeyStatsDto;
+import com.safeview.domain.dashboard.dto.UserListResponseDto;
 import com.safeview.domain.dashboard.dto.UserStatsDto;
 import com.safeview.domain.dashboard.dto.YearlyKeyIssuanceDto;
 import com.safeview.domain.dashboard.dto.YearlyNewUsersDto;
@@ -12,6 +13,8 @@ import com.safeview.domain.user.repository.UserRepository;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -165,5 +168,37 @@ public class DashboardServiceImpl implements DashboardService {
         
         // 매퍼를 통해 DTO 변환
         return dashboardMapper.toYearlyKeyIssuanceDto(currentYear, monthlyDataList, totalIssuedKeys);
+    }
+    
+    /**
+     * 회원 목록 조회 (관리자용)
+     * 
+     * @param adminUserId 관리자 사용자 ID
+     * @param role 사용자 역할 (선택적, null이면 모든 역할)
+     * @param pageable 페이징 정보
+     * @return 회원 목록 (페이지네이션)
+     */
+    @Override
+    public Page<UserListResponseDto> getUsers(Long adminUserId, Role role, Pageable pageable) {
+        // 관리자 권한 검증
+        User admin = userRepository.findById(adminUserId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자를 찾을 수 없습니다."));
+        
+        if (admin.getRole() != Role.ADMIN) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 없습니다.");
+        }
+        
+        // 역할별 또는 전체 회원 조회
+        Page<User> users;
+        if (role != null) {
+            users = userRepository.findByRole(role, pageable);
+        } else {
+            users = userRepository.findAll(pageable);
+        }
+        
+        // DTO로 변환
+        Page<UserListResponseDto> responseDtoPage = users.map(dashboardMapper::toUserListResponseDto);
+        
+        return responseDtoPage;
     }
 }

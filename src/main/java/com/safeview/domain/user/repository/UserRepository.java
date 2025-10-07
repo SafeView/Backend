@@ -2,6 +2,8 @@ package com.safeview.domain.user.repository;
 
 import com.safeview.domain.user.entity.Role;
 import com.safeview.domain.user.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,4 +40,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT COUNT(u) FROM User u WHERE YEAR(u.createdAt) = :year AND MONTH(u.createdAt) = :month")
     long countByCreatedAtYearAndMonth(@Param("year") int year, @Param("month") int month);
+    
+    // findAll(Pageable) 메서드는 이미 JpaRepository에서 제공됨
+    
+    /**
+     * 특정 역할의 사용자 조회 (페이지네이션)
+     * 
+     * @param role 사용자 역할
+     * @param pageable 페이징 정보
+     * @return 해당 역할의 사용자 목록 (페이지네이션)
+     */
+    Page<User> findByRole(Role role, Pageable pageable);
 }

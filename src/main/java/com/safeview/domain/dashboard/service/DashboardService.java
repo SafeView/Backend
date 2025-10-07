@@ -1,9 +1,13 @@
 package com.safeview.domain.dashboard.service;
 
 import com.safeview.domain.dashboard.dto.KeyStatsDto;
+import com.safeview.domain.dashboard.dto.UserListResponseDto;
 import com.safeview.domain.dashboard.dto.UserStatsDto;
 import com.safeview.domain.dashboard.dto.YearlyKeyIssuanceDto;
 import com.safeview.domain.dashboard.dto.YearlyNewUsersDto;
+import com.safeview.domain.user.entity.Role;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * 대시보드 서비스 인터페이스
@@ -43,4 +47,14 @@ public interface DashboardService {
      * @return 1년간 월별 복호화 키 발급 추이 정보 (12개월 데이터)
      */
     YearlyKeyIssuanceDto getYearlyKeyIssuance(Long adminUserId);
+    
+    /**
+     * 회원 목록 조회 (관리자용)
+     * 
+     * @param adminUserId 관리자 사용자 ID
+     * @param role 사용자 역할 (선택적, null이면 모든 역할)
+     * @param pageable 페이징 정보
+     * @return 회원 목록 (페이지네이션)
+     */
+    Page<UserListResponseDto> getUsers(Long adminUserId, Role role, Pageable pageable);
 }

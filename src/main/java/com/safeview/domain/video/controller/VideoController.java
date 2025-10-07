@@ -2,11 +2,12 @@ package com.safeview.domain.video.controller;
 
 
 import com.safeview.domain.video.dto.*;
-import com.safeview.domain.video.mapper.PageMapper;
 import com.safeview.domain.video.service.VideoDownloadLogService;
 import com.safeview.domain.video.service.VideoService;
 import com.safeview.global.exception.ApiException;
+import com.safeview.global.mapper.PageMapper;
 import com.safeview.global.response.ApiResponse;
+import com.safeview.global.response.CustomPageResponseDto;
 import com.safeview.global.response.ErrorCode;
 import com.safeview.global.response.SuccessCode;
 import jakarta.validation.Valid;
@@ -233,7 +234,7 @@ public class VideoController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/download-logs")
-    public ResponseEntity<ApiResponse<PageResponseDto<VideoDownloadLogResponseDto>>> getDownloadLogs(
+    public ResponseEntity<ApiResponse<CustomPageResponseDto<VideoDownloadLogResponseDto>>> getDownloadLogs(
             @AuthenticationPrincipal Long adminUserId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         
@@ -245,9 +246,9 @@ public class VideoController {
         }
         
         Page<VideoDownloadLogResponseDto> downloadLogs = videoDownloadLogService.getDownloadLogsForAdmin(adminUserId, pageable);
-        PageResponseDto<VideoDownloadLogResponseDto> response = PageMapper.toPageResponse(downloadLogs);
+        CustomPageResponseDto<VideoDownloadLogResponseDto> response = PageMapper.toCustomPageResponse(downloadLogs);
         
-        log.info("관리자 다운로드 로그 조회 완료: adminUserId={}, totalElements={}", adminUserId, downloadLogs.getTotalElements());
+        log.info("관리자 다운로드 로그 조회 완료: adminUserId={}, totalElements={}", adminUserId, response.getTotalElements());
         return ApiResponse.toResponseEntity(SuccessCode.OK, response);
     }
     

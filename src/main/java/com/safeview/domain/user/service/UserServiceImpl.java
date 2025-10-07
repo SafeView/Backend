@@ -237,8 +237,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(requestDto.getEmail())
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        // 임시 비밀번호 생성 (8자리 영문+숫자)
-        String tempPassword = generateTempPassword();
+        // 임시 비밀번호 생성 (8자리 영문 대소문자 + 숫자)
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder(8);
+        
+        for (int i = 0; i < 8; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        String tempPassword = password.toString();
 
         // 사용자 비밀번호를 임시 비밀번호로 업데이트
         String encodedTempPassword = passwordEncoder.encode(tempPassword);
@@ -266,7 +273,8 @@ public class UserServiceImpl implements UserService {
         }
 
         // 6자리 인증번호 생성
-        String verificationCode = generateVerificationCode();
+        SecureRandom random = new SecureRandom();
+        String verificationCode = String.format("%06d", random.nextInt(1000000));
 
         // 인증번호 저장 (5분 유효)
         emailVerificationStore.storeVerificationCode(requestDto.getEmail(), verificationCode);
@@ -295,30 +303,4 @@ public class UserServiceImpl implements UserService {
         return new EmailVerificationResponseDto("이메일 인증이 완료되었습니다.");
     }
 
-    /**
-     * 임시 비밀번호 생성
-     * 
-     * @return 8자리 임시 비밀번호 (영문 대소문자 + 숫자)
-     */
-    private String generateTempPassword() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        SecureRandom random = new SecureRandom();
-        StringBuilder password = new StringBuilder(8);
-        
-        for (int i = 0; i < 8; i++) {
-            password.append(chars.charAt(random.nextInt(chars.length())));
-        }
-        
-        return password.toString();
-    }
-
-    /**
-     * 인증번호 생성
-     * 
-     * @return 6자리 인증번호
-     */
-    private String generateVerificationCode() {
-        SecureRandom random = new SecureRandom();
-        return String.format("%06d", random.nextInt(1000000));
-    }
 }

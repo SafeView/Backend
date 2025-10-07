@@ -1,9 +1,11 @@
 package com.safeview.domain.dashboard.mapper;
 
 import com.safeview.domain.dashboard.dto.KeyStatsDto;
+import com.safeview.domain.dashboard.dto.UserListResponseDto;
 import com.safeview.domain.dashboard.dto.UserStatsDto;
 import com.safeview.domain.dashboard.dto.YearlyKeyIssuanceDto;
 import com.safeview.domain.dashboard.dto.YearlyNewUsersDto;
+import com.safeview.domain.user.entity.User;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -87,6 +89,27 @@ public class DashboardMapper {
                 .monthlyData(monthlyDataList)
                 .totalIssuedKeys(totalIssuedKeys)
                 .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    /**
+     * User 엔티티를 UserListResponseDto로 변환
+     * 
+     * @param user User 엔티티
+     * @return UserListResponseDto 인스턴스
+     */
+    public UserListResponseDto toUserListResponseDto(User user) {
+        return UserListResponseDto.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .phone(user.getPhone())
+                .address(user.getAddress())
+                .gender(user.getGender().name())
+                .birthday(user.getBirthday())
+                .role(user.getRole())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
                 .build();
     }
 }
