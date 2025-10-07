@@ -226,13 +226,12 @@ public class VideoController {
      * @param pageable 페이징 정보 (page, size, sort)
      * @return 다운로드 로그 목록 (페이지네이션)
      * 
-     * 권한: ADMIN만 접근 가능
+     * 권한: ADMIN만 접근 가능 (서비스 단에서 검증)
      * 기능: 모든 다운로드 로그를 최신순으로 조회
      * 
      * 사용 예시:
      * GET /api/videos/download-logs?page=0&size=10&sort=createdAt,desc
      */
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/download-logs")
     public ResponseEntity<ApiResponse<CustomPageResponseDto<VideoDownloadLogResponseDto>>> getDownloadLogs(
             @AuthenticationPrincipal Long adminUserId,
