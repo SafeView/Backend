@@ -1,6 +1,8 @@
 package com.safeview.domain.dashboard.controller;
 
+import com.safeview.domain.dashboard.dto.KeyStatsDto;
 import com.safeview.domain.dashboard.dto.UserStatsDto;
+import com.safeview.domain.dashboard.dto.YearlyKeyIssuanceDto;
 import com.safeview.domain.dashboard.dto.YearlyNewUsersDto;
 import com.safeview.domain.dashboard.service.DashboardService;
 import com.safeview.global.response.ApiResponse;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 관리자 대시보드에서 필요한 통계 및 분석 데이터를 제공하는 API
  * - 사용자 통계 조회
  * - 월별 신규 가입자 수 조회
+ * - 복호화 키 통계 조회
  */
 @RestController
 @RequestMapping("/api/dashboard")
@@ -54,7 +57,41 @@ public class DashboardController {
     @GetMapping("/yearly-new-users")
     public ResponseEntity<ApiResponse<YearlyNewUsersDto>> getYearlyNewUsers(
             @AuthenticationPrincipal Long adminUserId) {
+
+                
         YearlyNewUsersDto yearlyNewUsers = dashboardService.getYearlyNewUsers(adminUserId);
         return ApiResponse.toResponseEntity(SuccessCode.OK, yearlyNewUsers);
+    }
+    
+    /**
+     * 복호화 키 통계 조회
+     * 
+     * @param adminUserId 인증된 관리자 ID
+     * @return 복호화 키 통계 정보 (총 발급 수, 상태별 수, 사용률 등)
+     * 
+     * 권한: ADMIN만 접근 가능
+     * 기능: 대시보드에서 복호화 키 현황을 표시하기 위한 데이터 제공
+     */
+    @GetMapping("/key-stats")
+    public ResponseEntity<ApiResponse<KeyStatsDto>> getKeyStats(
+            @AuthenticationPrincipal Long adminUserId) {
+        KeyStatsDto keyStats = dashboardService.getKeyStats(adminUserId);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, keyStats);
+    }
+    
+    /**
+     * 1년간 월별 복호화 키 발급 조회
+     * 
+     * @param adminUserId 인증된 관리자 ID
+     * @return 1년간 월별 복호화 키 발급 추이 정보 (12개월 데이터)
+     * 
+     * 권한: ADMIN만 접근 가능
+     * 기능: 대시보드에서 1년간 월별 복호화 키 발급 추이를 표시하기 위한 데이터 제공
+     */
+    @GetMapping("/yearly-key-issuance")
+    public ResponseEntity<ApiResponse<YearlyKeyIssuanceDto>> getYearlyKeyIssuance(
+            @AuthenticationPrincipal Long adminUserId) {
+        YearlyKeyIssuanceDto yearlyKeyIssuance = dashboardService.getYearlyKeyIssuance(adminUserId);
+        return ApiResponse.toResponseEntity(SuccessCode.OK, yearlyKeyIssuance);
     }
 }

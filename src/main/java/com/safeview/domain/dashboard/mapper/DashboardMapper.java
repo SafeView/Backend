@@ -1,6 +1,8 @@
 package com.safeview.domain.dashboard.mapper;
 
+import com.safeview.domain.dashboard.dto.KeyStatsDto;
 import com.safeview.domain.dashboard.dto.UserStatsDto;
+import com.safeview.domain.dashboard.dto.YearlyKeyIssuanceDto;
 import com.safeview.domain.dashboard.dto.YearlyNewUsersDto;
 import org.springframework.stereotype.Component;
 
@@ -46,6 +48,44 @@ public class DashboardMapper {
                 .year(currentYear)
                 .monthlyData(monthlyDataList)
                 .totalNewUsers(totalNewUsers)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    /**
+     * 복호화 키 통계를 KeyStatsDto로 변환
+     * 
+     * @param totalKeys 총 발급된 키 수
+     * @param activeKeys 활성 키 수
+     * @param expiredKeys 만료된 키 수
+     * @param revokedKeys 취소된 키 수
+     * @param usageRate 키 사용률
+     * @return KeyStatsDto 인스턴스
+     */
+    public KeyStatsDto toKeyStatsDto(Long totalKeys, Long activeKeys, Long expiredKeys, Long revokedKeys, 
+                                   Double usageRate) {
+        return KeyStatsDto.builder()
+                .totalKeys(totalKeys)
+                .activeKeys(activeKeys)
+                .expiredKeys(expiredKeys)
+                .revokedKeys(revokedKeys)
+                .usageRate(usageRate)
+                .build();
+    }
+    
+    /**
+     * 1년간 월별 복호화 키 발급 추이를 YearlyKeyIssuanceDto로 변환
+     * 
+     * @param currentYear 연도
+     * @param monthlyDataList 월별 데이터 목록
+     * @param totalIssuedKeys 총 발급된 키 수
+     * @return YearlyKeyIssuanceDto 인스턴스
+     */
+    public YearlyKeyIssuanceDto toYearlyKeyIssuanceDto(int currentYear, List<YearlyKeyIssuanceDto.MonthlyData> monthlyDataList, long totalIssuedKeys) {
+        return YearlyKeyIssuanceDto.builder()
+                .year(currentYear)
+                .monthlyData(monthlyDataList)
+                .totalIssuedKeys(totalIssuedKeys)
                 .createdAt(LocalDateTime.now())
                 .build();
     }
