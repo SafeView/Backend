@@ -33,6 +33,16 @@ spring:
             enable: true
             trust: smtp.naver.com
 
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region:
+      static: ${S3_REGION}
+    s3:
+      bucket: ${S3_BUCKET_NAME}
+
 jwt:
   secret: ${JWT_SECRET}
   expiration: 36000000  # Access Token 만료 시간 (1시간)

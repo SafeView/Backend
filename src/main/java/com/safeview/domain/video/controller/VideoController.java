@@ -21,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 /**
@@ -250,5 +249,42 @@ public class VideoController {
         log.info("관리자 다운로드 로그 조회 완료: adminUserId={}, totalElements={}", adminUserId, response.getTotalElements());
         return ApiResponse.toResponseEntity(SuccessCode.OK, response);
     }
-    
+
+    /**
+     * 영상 스트리밍 API
+     *
+     * @param filename 스트리밍할 영상 파일명 (recordings 디렉토리 내 S3 객체명)
+     * @param rangeHeader HTTP Range 헤더 (부분 요청 시 시작~끝 바이트 범위, 예: "bytes=0-")
+     * @return S3에서 읽은 영상 데이터(바이트 배열)와 스트리밍 관련 HTTP 헤더를 포함한 응답
+     *
+     * 처리 과정:
+     * 1. 요청된 파일명으로 S3 내 객체를 조회하여 메타데이터 및 파일 크기 확인
+     * 2. Range 헤더가 포함된 경우, 지정된 바이트 범위만큼 데이터를 읽음
+     * 3. HttpHeaders(Content-Type, Content-Range, Content-Length, Accept-Ranges) 구성
+     * 4. 206 Partial Content 상태코드로 응답 반환 (스트리밍 지원)
+     *
+     * 보안:
+     * - 인증된 사용자만 접근 가능
+     */
+    @GetMapping("/stream/{filename}")
+    public ResponseEntity<byte[]> streamVideo(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable String filename,
+            @RequestHeader(value = "Range", required = false) String rangeHeader) {
+
+        log.info("영상 스트리밍 요청: userId={}, filename={}", userId, filename);
+
+        // 사용자 ID 검증
+        if (userId == null || userId <= 0) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "유효하지 않은 사용자 정보입니다.");
+        }
+
+        // 파일명 검증
+        if (filename == null || filename.trim().isEmpty()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "파일명 오류.");
+        }
+
+        log.info("영상 스트리밍 성공: userId={}, filename={}", userId, filename);
+        return videoService.streamVideo(filename, rangeHeader);
+    }
 }
