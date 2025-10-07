@@ -14,6 +14,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:data.sql
+      continue-on-error: true
 
   mail:
     host: smtp.naver.com          # 네이버 SMTP 서버 주소
