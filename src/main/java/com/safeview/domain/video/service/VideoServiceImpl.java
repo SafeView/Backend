@@ -1,5 +1,8 @@
 package com.safeview.domain.video.service;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.safeview.domain.video.dto.DownloadResponseDto;
 import com.safeview.domain.video.dto.RecordingResponseDto;
 import com.safeview.domain.video.dto.VideoListResponseDto;
@@ -12,16 +15,13 @@ import com.safeview.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.safeview.global.response.ErrorCode.VIDEO_NOT_FOUND;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * 비디오 서비스 구현체
@@ -48,6 +48,11 @@ public class VideoServiceImpl implements VideoService{
 
     @Value("${ai.server.url}")
     private String aiServerUrl;
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucketName;
+
+    private final AmazonS3 amazonS3;
 
     /**
      * 비디오 엔티티 생성
@@ -283,7 +288,7 @@ public class VideoServiceImpl implements VideoService{
         try {
             if(videoRepository.findByFilename(filename) == null){
                 log.warn("영상을 찾을 수 없음: filename={}", filename);
-                throw new ApiException(VIDEO_NOT_FOUND, "비디오를 찾을 수 없습니다.");
+                throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, "비디오를 찾을 수 없습니다.");
             }
             
             String url = aiServerUrl + "/recordings/" + filename;
@@ -291,7 +296,7 @@ public class VideoServiceImpl implements VideoService{
 
             if(response == null){
                 log.error("AI 서버 응답 없음: 다운로드 실패, filename={}", filename);
-                throw new ApiException(VIDEO_NOT_FOUND, "다운로드 할 수 없습니다.");
+                throw new ApiException(ErrorCode.VIDEO_NOT_FOUND, "다운로드 할 수 없습니다.");
             }
 
             if(response.getError() == null || !response.getError().equals("no error")){
@@ -310,4 +315,62 @@ public class VideoServiceImpl implements VideoService{
         }
     }
 
+    /**
+     *
+     * @param filename 스트리밍할 영상 파일명
+     * @param rangeHeader HTTP Range 헤더 (부분 스트리밍 요청 시 시작~끝 바이트 범위)
+     * @return 요청한 구간의 영상 데이터와 함께 반환되는 스트리밍 응답(ResponseEntity)
+     *
+     * 처리 과정:
+     * 1. 요청받은 파일명을 기반으로 S3 객체 키 생성 (recordings/{filename})
+     * 2. Amazon S3에서 해당 객체 메타데이터 및 파일 크기 조회
+     * 3. Range 헤더가 존재할 경우, 시작 및 종료 바이트 범위 계산
+     * 4. S3ObjectInputStream에서 해당 구간만큼 데이터를 읽어 byte 배열 생성
+     * 5. HTTP 헤더(Content-Type, Content-Range, Content-Length 등) 설정
+     * 6. 206 Partial Content 상태로 응답 반환
+     *
+     * 외부 연동:
+     * 프론트엔드의 <video> 태그 또는 axios/fetch 요청에서
+     * Range 기반 스트리밍 재생 요청을 보낼 때 호출됨
+     *
+     * 예외:
+     * - 영상 파일이 존재하지 않거나 S3 접근 실패 시 예외 발생
+     * - I/O 처리 중 오류 발생 시 RuntimeException으로 래핑되어 전파
+     */
+    @Override
+    public ResponseEntity<byte[]> streamVideo(String filename, String rangeHeader) {
+        String key = "recordings/" + filename;
+
+        S3Object s3Object = amazonS3.getObject(bucketName, key);
+        long fileSize = s3Object.getObjectMetadata().getContentLength();
+
+        long rangeStart = 0;
+        long rangeEnd = fileSize - 1;
+
+        if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+            String[] ranges = rangeHeader.substring(6).split("-");
+            rangeStart = Long.parseLong(ranges[0]);
+            if (ranges.length > 1 && !ranges[1].isEmpty()) {
+                rangeEnd = Long.parseLong(ranges[1]);
+            }
+        }
+
+        long chunkSize = rangeEnd - rangeStart + 1;
+
+        try (S3ObjectInputStream inputStream = s3Object.getObjectContent()) {
+            inputStream.skip(rangeStart);
+            byte[] data = inputStream.readNBytes((int) chunkSize);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, "video/mp4");
+            headers.add(HttpHeaders.ACCEPT_RANGES, "bytes");
+            headers.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(data.length));
+            headers.add(HttpHeaders.CONTENT_RANGE, String.format("bytes %d-%d/%d", rangeStart, rangeEnd, fileSize));
+
+            return new ResponseEntity<>(data, headers, HttpStatus.PARTIAL_CONTENT);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to stream video", e);
+        }
+    }
 }

@@ -4,8 +4,8 @@ import com.safeview.domain.video.dto.DownloadResponseDto;
 import com.safeview.domain.video.dto.RecordingResponseDto;
 import com.safeview.domain.video.dto.VideoListResponseDto;
 import com.safeview.domain.video.dto.VideoResponseDto;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 /**
@@ -26,6 +26,7 @@ public interface VideoService {
     RecordingResponseDto stopRecording(Long userId);
     List<VideoResponseDto> getAllVideosByUserId(Long userId);
     DownloadResponseDto downloadVideo(String filename);
+    ResponseEntity<byte[]> streamVideo(String filename, String rangeHeader);
     List<VideoListResponseDto> getAllVideosGroupedByUser();
     void makeVideoEntity(List<String>urls, Long userId);
 }
