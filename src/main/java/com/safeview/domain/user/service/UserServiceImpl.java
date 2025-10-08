@@ -66,11 +66,6 @@ public class UserServiceImpl implements UserService {
             throw new ApiException(ErrorCode.PHONE_ALREADY_EXISTS);
         }
 
-        // 이메일 인증 완료 여부 확인
-        if (!emailVerificationStore.isEmailVerified(requestDto.getEmail())) {
-            throw new ApiException(ErrorCode.BAD_REQUEST, "이메일 인증을 완료해주세요.");
-        }
-
         // User 엔티티 생성
         User user = userMapper.toEntity(requestDto);
         User savedUser = userRepository.save(user);
