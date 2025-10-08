@@ -1,6 +1,5 @@
 package com.safeview.domain.auth.mapper;
 
-import com.safeview.domain.auth.dto.UserInfoResponseDto;
 import com.safeview.domain.auth.dto.UserLoginResponseDto;
 import com.safeview.domain.user.entity.User;
 import org.springframework.stereotype.Component;
@@ -20,21 +19,4 @@ public class AuthMapper {
         return new UserLoginResponseDto(user.getEmail(), user.getName());
     }
 
-    /*
-     * User 엔티티를 UserInfoResponseDto로 변환
-     */
-    public UserInfoResponseDto toUserInfoResponseDto(User user) {
-        return new UserInfoResponseDto(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getAddress(),
-                user.getPhone(),
-                user.getGender(),
-                user.getBirthday(),
-                user.getRole().name(),
-                user.getCreatedAt().toString(),
-                user.getUpdatedAt().toString()
-        );
-    }
 }

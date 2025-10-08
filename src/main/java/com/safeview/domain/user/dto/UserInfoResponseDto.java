@@ -1,4 +1,4 @@
-package com.safeview.domain.auth.dto;
+package com.safeview.domain.user.dto;
 
 import com.safeview.domain.user.entity.Gender;
 import lombok.AllArgsConstructor;
@@ -26,12 +26,4 @@ public class UserInfoResponseDto {
     private String role;
     private String createdAt;
     private String updatedAt;
-
-    @Getter
-    @AllArgsConstructor
-    public static class UserLoginResult {
-        private String accessToken;
-        private String refreshToken;
-        private UserLoginResponseDto userInfo;
-    }
 }

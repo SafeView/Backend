@@ -4,9 +4,13 @@ import com.safeview.domain.user.dto.*;
 import com.safeview.domain.user.entity.User;
 import com.safeview.domain.user.mapper.UserMapper;
 import com.safeview.domain.user.repository.UserRepository;
+import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ErrorCode;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import java.security.SecureRandom;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,10 +27,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final EmailVerificationStore emailVerificationStore;
 
     /**
      * 회원가입 처리
@@ -52,14 +60,14 @@ public class UserServiceImpl implements UserService {
             throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        // 전화번호 중복 확인
-        if (userRepository.existsByPhone(requestDto.getPhone())) {
+        // 전화번호 중복 확인 (하이픈 제거 후 확인)
+        String phoneWithoutHyphen = requestDto.getPhone().replaceAll("-", "");
+        if (userRepository.existsByPhone(phoneWithoutHyphen)) {
             throw new ApiException(ErrorCode.PHONE_ALREADY_EXISTS);
         }
 
         // User 엔티티 생성
         User user = userMapper.toEntity(requestDto);
-
         User savedUser = userRepository.save(user);
 
         return userMapper.toSignUpResponseDto(savedUser);
@@ -80,12 +88,232 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public EmailCheckResponseDto checkEmail(String email) {
-        boolean exists = userRepository.findByEmail(email).isPresent();
+        log.info("이메일 중복 확인: email={}", email);
         
-        if (exists) {
-            throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS, new EmailCheckResponseDto(false));
+        try {
+            // 이메일 검증
+            if (email == null || email.trim().isEmpty()) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "이메일을 입력해주세요.");
+            }
+            if (!email.contains("@") || !email.contains(".")) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "이메일 형식이 아닙니다.");
+            }
+            
+            boolean exists = userRepository.findByEmail(email).isPresent();
+            
+            if (exists) {
+                log.warn("이메일 중복 확인 실패 - 이미 존재: email={}", email);
+                throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS, new EmailCheckResponseDto(false));
+            }
+            
+            log.info("이메일 중복 확인 성공 - 사용 가능: email={}", email);
+            return new EmailCheckResponseDto(true);
+            
+        } catch (ApiException e) {
+            log.error("이메일 중복 확인 실패: email={}, error={}", email, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("이메일 중복 확인 중 예상치 못한 오류: email={}", email, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "이메일 중복 확인 중 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 사용자 정보 조회
+     * 
+     * @param userId 조회할 사용자 ID
+     * @return 사용자 상세 정보
+     * 
+     * 처리 과정:
+     * 1. 사용자 ID로 사용자 조회
+     * 2. 사용자 정보를 DTO로 변환
+     * 3. 사용자 정보 반환
+     * 
+     * 예외: 존재하지 않는 사용자
+     */
+    @Override
+    public UserInfoResponseDto getUserInfoById(Long userId) {
+        log.info("사용자 정보 조회: userId={}", userId);
+        
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+            
+            log.info("사용자 정보 조회 성공: userId={}", userId);
+            return userMapper.toUserInfoResponseDto(user);
+            
+        } catch (ApiException e) {
+            log.error("사용자 정보 조회 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("사용자 정보 조회 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "사용자 정보 조회 중 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 사용자 정보 수정
+     * 
+     * @param userId 수정할 사용자 ID
+     * @param requestDto 수정할 사용자 정보
+     * @return 수정된 사용자 정보
+     * 
+     * 처리 과정:
+     * 1. 사용자 ID로 사용자 조회
+     * 2. 전화번호 중복 확인 (다른 사용자와 중복되지 않는지)
+     * 3. 비밀번호 암호화
+     * 4. 사용자 정보 업데이트
+     * 5. 수정된 사용자 정보 반환
+     * 
+     * 예외: 존재하지 않는 사용자, 중복된 전화번호
+     */
+    @Override
+    @Transactional
+    public UserInfoResponseDto updateUserInfo(Long userId, UserUpdateRequestDto requestDto) {
+        log.info("사용자 정보 수정 시작: userId={}", userId);
+        
+        try {
+            // 사용자 조회
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+
+            // 전화번호 중복 확인 (현재 사용자 제외)
+            if (userRepository.existsByPhoneAndIdNot(requestDto.getPhone(), userId)) {
+                log.warn("사용자 정보 수정 실패 - 전화번호 중복: userId={}, phone={}", userId, requestDto.getPhone());
+                throw new ApiException(ErrorCode.PHONE_ALREADY_EXISTS);
+            }
+
+            // 비밀번호 암호화
+            String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
+
+            // 사용자 정보 업데이트
+            user.updateUserInfo(
+                    encodedPassword,
+                    requestDto.getName(),
+                    requestDto.getAddress(),
+                    requestDto.getPhone(),
+                    requestDto.getGender(),
+                    requestDto.getBirthday()
+            );
+
+            User savedUser = userRepository.save(user);
+
+            log.info("사용자 정보 수정 완료: userId={}", userId);
+            return userMapper.toUserInfoResponseDto(savedUser);
+            
+        } catch (ApiException e) {
+            log.error("사용자 정보 수정 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("사용자 정보 수정 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "사용자 정보 수정 중 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 임시 비밀번호 발송
+     * 
+     * @param requestDto 임시 비밀번호 발송 요청 정보
+     * @return 임시 비밀번호 발송 결과
+     * 
+     * 처리 과정:
+     * 1. 이메일로 사용자 조회
+     * 2. 임시 비밀번호 생성
+     * 3. 사용자 비밀번호를 임시 비밀번호로 업데이트
+     * 4. 이메일로 임시 비밀번호 발송
+     * 5. 발송 완료 메시지 반환
+     * 
+     * 예외: 존재하지 않는 사용자
+     */
+    @Override
+    @Transactional
+    public TempPasswordResponseDto sendTempPassword(TempPasswordRequestDto requestDto) {
+        // 사용자 조회
+        User user = userRepository.findByEmail(requestDto.getEmail())
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+
+        // 임시 비밀번호 생성 (8자리 영문+숫자)
+        String tempPassword = generateTempPassword();
+
+        // 사용자 비밀번호를 임시 비밀번호로 업데이트
+        String encodedTempPassword = passwordEncoder.encode(tempPassword);
+        user.updatePassword(encodedTempPassword);
+        userRepository.save(user);
+
+        // 이메일로 임시 비밀번호 발송
+        emailService.sendTempPassword(requestDto.getEmail(), tempPassword);
+
+        return new TempPasswordResponseDto("임시 비밀번호가 이메일로 발송되었습니다.");
+    }
+
+    /**
+     * 이메일 인증번호 발송
+     *
+     * @param requestDto 이메일 인증번호 발송 요청
+     * @return 발송 성공 메시지
+     */
+    @Override
+    @Transactional
+    public EmailVerificationResponseDto sendEmailVerificationCode(EmailVerificationRequestDto requestDto) {
+        // 이메일 중복 확인
+        if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
+            throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
+        // 6자리 인증번호 생성
+        String verificationCode = generateVerificationCode();
+
+        // 인증번호 저장 (5분 유효)
+        emailVerificationStore.storeVerificationCode(requestDto.getEmail(), verificationCode);
+
+        // 이메일 발송
+        emailService.sendVerificationCode(requestDto.getEmail(), verificationCode);
+
+        return new EmailVerificationResponseDto("인증번호가 이메일로 발송되었습니다.");
+    }
+
+    /**
+     * 이메일 인증번호 검증
+     *
+     * @param requestDto 이메일 인증번호 검증 요청
+     * @return 검증 성공 메시지
+     */
+    @Override
+    public EmailVerificationResponseDto verifyEmailCode(EmailVerificationDto requestDto) {
+        // 인증번호 검증
+        boolean isValid = emailVerificationStore.verifyCode(requestDto.getEmail(), requestDto.getCode());
+        
+        if (!isValid) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "인증번호가 올바르지 않거나 만료되었습니다.");
+        }
+
+        return new EmailVerificationResponseDto("이메일 인증이 완료되었습니다.");
+    }
+
+    /**
+     * 임시 비밀번호 생성
+     * 
+     * @return 8자리 임시 비밀번호 (영문 대소문자 + 숫자)
+     */
+    private String generateTempPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder(8);
+        
+        for (int i = 0; i < 8; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
         }
         
-        return new EmailCheckResponseDto(true);
+        return password.toString();
+    }
+
+    /**
+     * 인증번호 생성
+     * 
+     * @return 6자리 인증번호
+     */
+    private String generateVerificationCode() {
+        SecureRandom random = new SecureRandom();
+        return String.format("%06d", random.nextInt(1000000));
     }
 }

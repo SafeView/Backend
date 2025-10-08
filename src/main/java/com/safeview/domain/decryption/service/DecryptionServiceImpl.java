@@ -7,6 +7,9 @@ import com.safeview.domain.decryption.repository.DecryptionKeyRepository;
 import com.safeview.domain.decryption.repository.BlockchainTransactionRepository;
 import com.safeview.domain.decryption.config.DecryptionConfig;
 import com.safeview.domain.decryption.mapper.DecryptionKeyMapper;
+import com.safeview.domain.user.entity.Role;
+import com.safeview.domain.user.entity.User;
+import com.safeview.domain.user.repository.UserRepository;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +48,7 @@ public class DecryptionServiceImpl implements DecryptionService {
     private final DecryptionConfig decryptionConfig;
     private final DecryptionKeyMapper decryptionKeyMapper;
     private final BlockchainService blockchainService;
-
+    private final UserRepository userRepository;
     // ===== 키 관리 메서드 =====
 
     /**
@@ -69,6 +72,14 @@ public class DecryptionServiceImpl implements DecryptionService {
     @Transactional
     public KeyIssuanceResponseDto issueKey(Long userId) {
         log.info("CCTV 복호화 키 발급 요청: userId={}", userId);
+
+        // 관리자 권한 검증
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        if (user.getRole() != Role.MODERATOR && user.getRole() != Role.ADMIN) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "MODERATOR 또는 ADMIN 권한이 필요합니다.");
+        }
 
         // 기존 유효한 키가 있는지 확인
         Optional<DecryptionKey> existingKey = findValidKeyByUserId(userId);
@@ -115,6 +126,14 @@ public class DecryptionServiceImpl implements DecryptionService {
      */
     @Override
     public KeyListResponseDto getKeyList(Long userId, int page, int size, String sortBy, String sortDir) {
+        // MODERATOR 또는 ADMIN 권한 검증
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        if (user.getRole() != Role.MODERATOR && user.getRole() != Role.ADMIN) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "MODERATOR 또는 ADMIN 권한이 필요합니다.");
+        }
+
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
         Page<DecryptionKey> keyPage = decryptionKeyRepository.findByUserId(userId, pageable);
         
@@ -199,6 +218,14 @@ public class DecryptionServiceImpl implements DecryptionService {
         log.info("사용자 ID+접근 토큰+카메라 ID 키 검증 요청: userId={}, accessToken={}, cameraId={}", 
                 userId, requestDto.getAccessToken(), requestDto.getCameraId());
         
+        // MODERATOR 또는 ADMIN 권한 검증
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        if (user.getRole() != Role.MODERATOR && user.getRole() != Role.ADMIN) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "MODERATOR 또는 ADMIN 권한이 필요합니다.");
+        }
+        
         // 1. 접근 토큰으로 키 조회
         DecryptionKey decryptionKey = findKeyByAccessToken(requestDto.getAccessToken());
         
@@ -281,6 +308,14 @@ public class DecryptionServiceImpl implements DecryptionService {
     public void revokeKey(KeyRevocationRequestDto requestDto, Long userId) {
         log.info("키 취소 요청: accessToken={}, userId={}", requestDto.getAccessToken(), userId);
 
+        // MODERATOR 또는 ADMIN 권한 검증
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        if (user.getRole() != Role.MODERATOR && user.getRole() != Role.ADMIN) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "MODERATOR 또는 ADMIN 권한이 필요합니다.");
+        }
+
         DecryptionKey decryptionKey = findKeyByAccessToken(requestDto.getAccessToken());
         validateKeyRevocation(decryptionKey, userId);
 
@@ -291,7 +326,15 @@ public class DecryptionServiceImpl implements DecryptionService {
     }
 
     @Override
-    public BlockchainTransactionResponseDto getTransaction(String txHash) {
+    public BlockchainTransactionResponseDto getTransaction(String txHash, Long userId) {
+        // ADMIN 권한 검증
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "ADMIN 권한이 필요합니다.");
+        }
+
         BlockchainTransaction transaction = findTransactionByHash(txHash);
         return decryptionKeyMapper.toBlockchainTransactionResponse(transaction);
     }
@@ -528,9 +571,6 @@ public class DecryptionServiceImpl implements DecryptionService {
                 .orElseThrow(() -> new RuntimeException("토큰을 찾을 수 없습니다."));
     }
 
-
-
-    @Transactional
     private void updateKeyStatus(DecryptionKey decryptionKey, String status, String revocationReason) {
         DecryptionKey updatedKey = decryptionKeyMapper.createUpdatedDecryptionKey(decryptionKey, status, revocationReason);
         decryptionKeyRepository.save(updatedKey);
@@ -591,7 +631,6 @@ public class DecryptionServiceImpl implements DecryptionService {
         return isValid;
     }
 
-    @Transactional
     private void saveBlockchainTransaction(String txHash, String txType) {
         BlockchainTransaction transaction = decryptionKeyMapper.createBlockchainTransaction(txHash, txType);
         blockchainTransactionRepository.save(transaction);
@@ -601,10 +640,6 @@ public class DecryptionServiceImpl implements DecryptionService {
         return blockchainTransactionRepository.findByTxHash(txHash)
                 .orElseThrow(() -> new RuntimeException("트랜잭션을 찾을 수 없습니다."));
     }
-
-
-
-
 
     // 유틸리티
     private Pageable createPageable(int page, int size, String sortBy, String sortDir) {

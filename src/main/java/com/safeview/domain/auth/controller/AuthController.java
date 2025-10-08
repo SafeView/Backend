@@ -2,7 +2,7 @@ package com.safeview.domain.auth.controller;
 
 import com.safeview.domain.auth.dto.UserLoginRequestDto;
 import com.safeview.domain.auth.dto.UserLoginResponseDto;
-import com.safeview.domain.auth.dto.UserInfoResponseDto;
+import com.safeview.domain.auth.dto.UserLoginResult;
 import com.safeview.domain.auth.service.AuthService;
 import com.safeview.global.exception.ApiException;
 import com.safeview.global.response.ApiResponse;
@@ -11,6 +11,7 @@ import com.safeview.global.response.SuccessCode;
 import com.safeview.global.security.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -25,7 +26,6 @@ import org.springframework.web.bind.annotation.*;
  * - 로그인/로그아웃 처리
  * - JWT 토큰 관리 (Access Token, Refresh Token)
  * - 토큰 재발급
- * - 사용자 정보 조회
  * 
  * 보안: JWT 토큰 기반 인증, HttpOnly 쿠키 사용
  * 쿠키: Access Token (1시간), Refresh Token (7일)
@@ -60,10 +60,12 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserLoginResponseDto>> login(
-            @RequestBody UserLoginRequestDto request,
+            @Valid @RequestBody UserLoginRequestDto request,
             HttpServletResponse response
     ) {
-        UserInfoResponseDto.UserLoginResult result = authService.login(request);
+        log.info("사용자 로그인 요청: email={}", request.getEmail());
+        
+        UserLoginResult result = authService.login(request);
         String accessToken = result.getAccessToken();
         String refreshToken = result.getRefreshToken();
 
@@ -108,6 +110,8 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+        log.info("사용자 로그아웃 요청");
+        
         // 서비스에서 로그아웃 처리
         String logoutMessage = authService.logout();
         
@@ -158,6 +162,8 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
+        log.info("Access Token 재발급 요청");
+        
         // Refresh Token 추출
         String refreshToken = jwtTokenProvider.resolveRefreshTokenFromCookie(request);
 
@@ -179,12 +185,8 @@ public class AuthController {
         // Refresh Token에서 사용자 ID 추출
         Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
 
-        // 사용자 정보 조회
-        UserInfoResponseDto userInfo = authService.getUserInfoById(userId);
-
-        // 새로운 Access Token 생성
-        String newAccessToken = jwtTokenProvider.generateAccessToken(userId, 
-                com.safeview.domain.user.entity.Role.valueOf(userInfo.getRole()));
+        // 새로운 Access Token 생성 (사용자 정보 조회)
+        String newAccessToken = authService.refreshAccessToken(userId);
 
         // 새로운 Access Token 쿠키 생성
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", newAccessToken)
@@ -201,47 +203,4 @@ public class AuthController {
         return ApiResponse.toResponseEntity(SuccessCode.OK, "Access Token이 재발급되었습니다.");
     }
 
-    /**
-     * 현재 로그인한 사용자 정보 조회
-     * 
-     * @param request HTTP 요청 객체 (Access Token 추출용)
-     * @return 현재 사용자의 상세 정보
-     * 
-     * 처리 과정:
-     * 1. 쿠키에서 Access Token 추출
-     * 2. Access Token 유효성 검증
-     * 3. 토큰에서 사용자 ID 추출
-     * 4. 사용자 정보 조회 및 반환
-     * 
-     * 보안: Access Token 검증 후 사용자 정보 조회
-     * 예외: 유효하지 않은 Access Token
-     */
-    @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserInfoResponseDto>> getMyInfo(HttpServletRequest request) {
-        // 쿠키에서 토큰 추출
-        String token = jwtTokenProvider.resolveTokenFromCookie(request);
-
-        // 토큰 존재 여부 검증
-        if (token == null) {
-            throw new ApiException(ErrorCode.MISSING_JWT_TOKEN);
-        }
-
-        // 토큰 유효성 검증
-        if (!jwtTokenProvider.validateToken(token)) {
-            throw new ApiException(ErrorCode.INVALID_JWT_TOKEN);
-        }
-
-        // Access Token인지 확인
-        if (!jwtTokenProvider.isAccessToken(token)) {
-            throw new ApiException(ErrorCode.INVALID_JWT_TOKEN, "Access Token이 아닙니다.");
-        }
-
-        // 토큰에서 userId 추출
-        Long userId = jwtTokenProvider.getUserIdFromToken(token);
-
-        // userId 기반으로 사용자 정보 조회
-        UserInfoResponseDto userInfo = authService.getUserInfoById(userId);
-
-        return ApiResponse.toResponseEntity(SuccessCode.OK, userInfo);
-    }
 }

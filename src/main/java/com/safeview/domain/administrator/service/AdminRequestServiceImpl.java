@@ -44,9 +44,11 @@ public class AdminRequestServiceImpl implements AdminRequestService {
      * @return 생성된 권한 요청 정보
      * 
      * 처리 과정:
-     * 1. DTO를 엔티티로 변환
-     * 2. 데이터베이스에 저장
-     * 3. 응답 DTO로 변환하여 반환
+     * 1. 입력 값 검증
+     * 2. 중복 요청 확인
+     * 3. DTO를 엔티티로 변환
+     * 4. 데이터베이스에 저장
+     * 5. 응답 DTO로 변환하여 반환
      * 
      * 초기 상태: PENDING (대기중)
      * 감사 로그: 요청 생성 이력 기록
@@ -56,11 +58,25 @@ public class AdminRequestServiceImpl implements AdminRequestService {
     public AdminRequestResponseDto createAdminRequest(Long userId, AdminRequestCreateDto createDto) {
         log.info("관리자 권한 요청 생성 시작: userId={}", userId);
         
-        AdminRequest adminRequest = adminRequestMapper.toEntity(userId, createDto);
-        AdminRequest savedRequest = adminRequestRepository.save(adminRequest);
-        
-        log.info("관리자 권한 요청 생성 완료: requestId={}, status={}", savedRequest.getId(), savedRequest.getStatus());
-        return adminRequestMapper.toResponseDto(savedRequest);
+        try {
+            // 중복 요청 확인 (대기중인 요청이 있는지 확인)
+            long pendingCount = adminRequestRepository.countPendingRequestsByUserId(userId);
+            if (pendingCount > 0) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "이미 대기중인 권한 요청이 있습니다.");
+            }
+            
+            AdminRequest adminRequest = adminRequestMapper.toEntity(userId, createDto);
+            AdminRequest savedRequest = adminRequestRepository.save(adminRequest);
+            
+            log.info("관리자 권한 요청 생성 완료: requestId={}, status={}", savedRequest.getId(), savedRequest.getStatus());
+            return adminRequestMapper.toResponseDto(savedRequest);
+        } catch (ApiException e) {
+            log.error("관리자 권한 요청 생성 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("관리자 권한 요청 생성 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "권한 요청 생성 중 오류가 발생했습니다.");
+        }
     }
 
     /**
@@ -79,10 +95,18 @@ public class AdminRequestServiceImpl implements AdminRequestService {
     public List<AdminRequestSummaryDto> getUserRequests(Long userId) {
         log.info("사용자 권한 요청 목록 조회: userId={}", userId);
         
-        List<AdminRequest> requests = adminRequestRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        return requests.stream()
-                .map(adminRequestMapper::toSummaryDto)
-                .toList();
+        try {
+            List<AdminRequest> requests = adminRequestRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            return requests.stream()
+                    .map(adminRequestMapper::toSummaryDto)
+                    .toList();
+        } catch (ApiException e) {
+            log.error("사용자 권한 요청 목록 조회 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("사용자 권한 요청 목록 조회 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "요청 목록 조회 중 오류가 발생했습니다.");
+        }
     }
 
     /**
@@ -101,10 +125,23 @@ public class AdminRequestServiceImpl implements AdminRequestService {
     public AdminRequestResponseDto getAdminRequest(Long requestId) {
         log.info("권한 요청 상세 조회: requestId={}", requestId);
         
-        AdminRequest adminRequest = adminRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, "관리자 요청을 찾을 수 없습니다."));
-        
-        return adminRequestMapper.toResponseDto(adminRequest);
+        try {
+            // 요청 ID 검증
+            if (requestId == null || requestId <= 0) {
+                throw new ApiException(ErrorCode.BAD_REQUEST, "유효하지 않은 요청 ID입니다.");
+            }
+            
+            AdminRequest adminRequest = adminRequestRepository.findById(requestId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "관리자 요청을 찾을 수 없습니다."));
+            
+            return adminRequestMapper.toResponseDto(adminRequest);
+        } catch (ApiException e) {
+            log.error("권한 요청 상세 조회 실패: requestId={}, error={}", requestId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("권한 요청 상세 조회 중 예상치 못한 오류: requestId={}", requestId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "요청 상세 조회 중 오류가 발생했습니다.");
+        }
     }
 
     /**
@@ -122,6 +159,14 @@ public class AdminRequestServiceImpl implements AdminRequestService {
     public long getPendingRequestCountByUserId(Long userId) {
         log.info("사용자 대기중인 요청 개수 조회: userId={}", userId);
         
-        return adminRequestRepository.countPendingRequestsByUserId(userId);
+        try {
+            return adminRequestRepository.countPendingRequestsByUserId(userId);
+        } catch (ApiException e) {
+            log.error("사용자 대기중인 요청 개수 조회 실패: userId={}, error={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("사용자 대기중인 요청 개수 조회 중 예상치 못한 오류: userId={}", userId, e);
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR, "대기중인 요청 개수 조회 중 오류가 발생했습니다.");
+        }
     }
 } 

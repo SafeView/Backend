@@ -2,6 +2,7 @@ package com.safeview.domain.user.mapper;
 
 import com.safeview.domain.user.dto.UserSignUpRequestDto;
 import com.safeview.domain.user.dto.UserSignUpResponseDto;
+import com.safeview.domain.user.dto.UserInfoResponseDto;
 import com.safeview.domain.user.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -47,5 +48,25 @@ public class UserMapper {
      */
     public UserSignUpResponseDto toSignUpResponseDto(User user) {
         return new UserSignUpResponseDto(user.getId());
+    }
+
+    /*
+     * User 엔티티를 UserInfoResponseDto로 변환
+     * 
+     * 사용자 정보 조회 시 상세 정보 반환
+     */
+    public UserInfoResponseDto toUserInfoResponseDto(User user) {
+        return new UserInfoResponseDto(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getAddress(),
+                user.getPhone(),
+                user.getGender(),
+                user.getBirthday(),
+                user.getRole().name(),
+                user.getCreatedAt().toString(),
+                user.getUpdatedAt().toString()
+        );
     }
 }

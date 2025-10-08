@@ -132,4 +132,23 @@ public class User extends BaseEntity {
     public void updateRole(Role newRole) {
         this.role = newRole;
     }
+
+    /*
+     * 사용자 정보 업데이트
+     */
+    public void updateUserInfo(String password, String name, String address, String phone, Gender gender, String birthday) {
+        this.password = password;
+        this.name = name;
+        this.address = address;
+        this.phone = phone;
+        this.gender = gender;
+        this.birthday = birthday;
+    }
+
+    /*
+     * 비밀번호 업데이트
+     */
+    public void updatePassword(String password) {
+        this.password = password;
+    }
 }

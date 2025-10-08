@@ -57,7 +57,7 @@ public interface DecryptionService {
     /**
      * 블록체인 트랜잭션 조회
      */
-    BlockchainTransactionResponseDto getTransaction(String txHash);
+    BlockchainTransactionResponseDto getTransaction(String txHash, Long userId);
 
     // ===== 키 생성 =====
     
